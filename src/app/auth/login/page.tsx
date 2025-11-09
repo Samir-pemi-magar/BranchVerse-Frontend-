@@ -46,7 +46,7 @@ export default function Login() {
           <p className="text-[24px]">Login With Google</p>
         </div>
         <p className="text-[16px] flex flex-row gap-1 mt-[39px]">
-          Don`t have an account? <p className="text-[#00B8AE]">Sign up</p>
+          Don`t have an account? <span className="text-[#00B8AE]">Sign up</span>
         </p>
       </div>
     </div>

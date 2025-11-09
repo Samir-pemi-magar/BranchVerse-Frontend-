@@ -59,7 +59,7 @@ export default function Signup() {
           <p className="text-[24px]">Signup With Google</p>
         </div>
         <p className="text-[16px] flex flex-row gap-1 mt-[39px]">
-          Don`t have an account? <p className="text-[#00B8AE]">Login</p>
+          Don`t have an account? <span className="text-[#00B8AE]">Login</span>
         </p>
       </div>
     </div>
