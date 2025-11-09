@@ -14,7 +14,7 @@ export default function Navbar() {
       </div>
       <div className="flex flex-row gap-[51px] items-center">
         <input
-          className="border border-[#A7A3A3]/49 rounded-[7px] w-[274px] h-[34px] outline-none px-[10px]"
+          className="border border-[#A7A3A3]/49 rounded-[7px] w-[274px] h-[34px] outline-none px-2.5"
           placeholder="Search BranchVerse Stories..."
         ></input>
         <Image src="/" alt="Profile" width={58} height={55} />
