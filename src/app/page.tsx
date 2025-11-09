@@ -1,9 +1,5 @@
-import StarterNavbar from "../component/StarterNavbar";
+import { redirect } from "next/navigation";
 
-export default function main() {
-  return (
-    <div>
-      <StarterNavbar />
-    </div>
-  );
+export default function Main() {
+  redirect("/auth/login");
 }
