@@ -28,7 +28,7 @@ export default function Login() {
       toast.success(res.msg || "Login successful!", { id: toastId });
 
       // Redirect to dashboard
-      router.push("/Dashboard");
+      router.push("/Users/Home");
     } catch (error: unknown) {
       const err = error as { response?: { data?: { msg?: string } } };
       toast.error(err.response?.data?.msg || "Login failed", { id: toastId });
