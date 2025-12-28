@@ -6,40 +6,29 @@ interface ChapterData {
   title: string;
   content: string;
   parentChapterId?: string;
+  branchTitle?: string;
 }
 
 export const CreateStory = async (data: FormData) => {
   try {
-    const response = await axiosInstance.post("/api/stories", data);
-    return response.data;
-  } catch (err: unknown) {
+    const res = await axiosInstance.post("/api/stories", data);
+    return res.data;
+  } catch (err) {
     if (axios.isAxiosError(err)) {
-      console.error("CreateStory error:", err.response?.data || err.message);
-      throw err;
-    } else if (err instanceof Error) {
-      console.error("CreateStory error:", err.message);
-      throw err;
-    } else {
-      console.error("CreateStory error:", err);
-      throw new Error("Unknown error");
+      throw err.response?.data || err.message;
     }
+    throw err;
   }
 };
 
 export const WriteStory = async (data: ChapterData) => {
   try {
-    const response = await axiosInstance.post("/api/chapters", data);
-    return response.data;
-  } catch (err: unknown) {
+    const res = await axiosInstance.post("/api/chapters", data);
+    return res.data;
+  } catch (err) {
     if (axios.isAxiosError(err)) {
-      console.error("WriteStory error:", err.response?.data || err.message);
-      throw err;
-    } else if (err instanceof Error) {
-      console.error("WriteStory error:", err.message);
-      throw err;
-    } else {
-      console.error("WriteStory error:", err);
-      throw new Error("Unknown error");
+      throw err.response?.data || err.message;
     }
+    throw err;
   }
 };

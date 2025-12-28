@@ -2,7 +2,6 @@
 
 import { useForm } from "react-hook-form";
 import { useState } from "react";
-import { redirect } from "next/navigation";
 import { CreateStory } from "@/src/Services/storyApi";
 import { useRouter } from "next/navigation";
 
@@ -53,7 +52,7 @@ export default function StoryTitle() {
     try {
       const res = await CreateStory(formData);
       console.log("Story created:", res.storyId);
-      router.push("/Users/Home");
+      router.push(`/Users/Storycreate?storyId=${res.storyId}`);
     } catch (err) {
       console.error(err);
       console.log("error check");

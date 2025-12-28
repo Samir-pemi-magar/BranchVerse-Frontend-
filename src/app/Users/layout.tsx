@@ -8,11 +8,11 @@ export default function UserLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col items-center">
-      {/* ✅ Shared Navbar */}
       <Navbar />
 
-      {/* ✅ Page Content */}
-      {children}
+      {/* This must grow */}
+      <div className="flex-1 w-full">{children}</div>
+
       <Footer />
     </div>
   );
