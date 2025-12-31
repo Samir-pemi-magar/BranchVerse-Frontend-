@@ -32,3 +32,41 @@ export const WriteStory = async (data: ChapterData) => {
     throw err;
   }
 };
+
+export const GetAllStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories");
+    return res.data; // array of stories
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};
+
+export const GetMainChapters = async (storyId: string) => {
+  try {
+    const res = await axiosInstance.get(`/api/chapters/${storyId}/main`);
+    return res.data; // array of main chapters (title + chapterNumber)
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};
+
+export const GetChapter = async (storyId: string, chapterId: string) => {
+  try {
+    const res = await axiosInstance.get(
+      `/api/chapters/read/${storyId}/${chapterId}`
+    );
+    return res.data; // full chapter content
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};

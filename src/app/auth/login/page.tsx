@@ -3,7 +3,9 @@ import { useRouter } from "next/navigation";
 import { FaGoogle } from "react-icons/fa";
 import { useForm } from "react-hook-form";
 import toast from "react-hot-toast";
-import { login as loginApi } from "@/src/Services/authapi";
+import { getPreferences, login as loginApi } from "@/src/Services/authapi";
+import PreferencesModal from "@/src/component/PreferencesModal";
+import { useState } from "react";
 
 type LoginFormInputs = {
   email: string;
@@ -13,6 +15,7 @@ type LoginFormInputs = {
 export default function Login() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<LoginFormInputs>();
+  const [showPreferences, setShowPreferences] = useState(false);
 
   const onSubmit = async (data: LoginFormInputs) => {
     const toastId = toast.loading("Logging in...");
@@ -22,13 +25,20 @@ export default function Login() {
         password: data.password,
       });
 
-      // Save token in localStorage
       localStorage.setItem("token", res.token);
 
       toast.success(res.msg || "Login successful!", { id: toastId });
 
-      // Redirect to dashboard
-      router.push("/Users/Home");
+      // ✅ CHECK IF USER ALREADY HAS PREFERENCES
+      const prefRes = await getPreferences(res.token);
+
+      if (!prefRes?.preferences || prefRes.preferences.genres.length === 0) {
+        // First-time user → show modal
+        setShowPreferences(true);
+      } else {
+        // Returning user → skip modal
+        router.push("/Users/Home");
+      }
     } catch (error: unknown) {
       const err = error as { response?: { data?: { msg?: string } } };
       toast.error(err.response?.data?.msg || "Login failed", { id: toastId });
@@ -99,6 +109,13 @@ export default function Login() {
           Don`t have an account? <span className="text-[#00B8AE]">Sign up</span>
         </p>
       </div>
+      <PreferencesModal
+        isOpen={showPreferences}
+        onClose={() => {
+          setShowPreferences(false);
+          router.push("/Users/Home"); // redirect after closing modal
+        }}
+      />
     </div>
   );
 }
