@@ -70,3 +70,39 @@ export const GetChapter = async (storyId: string, chapterId: string) => {
     throw err;
   }
 };
+
+export const GetTrendingStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/feed/trending");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};
+
+export const GetRecommendedStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/feed/recommended");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};
+
+export const GetPersonalizedStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/feed/personalized");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};

@@ -66,7 +66,7 @@ export default function StoryTitle() {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="py-[90px] w-full h-auto bg-white px-[140px] flex flex-col items-center"
+        className="py-[50px] w-full h-auto bg-white px-[140px] flex flex-col items-center"
       >
         <div className="flex flex-col gap-[26px] w-full">
           <p className="font-semibold text-[20px]">Story Information</p>
@@ -150,7 +150,7 @@ export default function StoryTitle() {
         </div>
 
         {/* Submit */}
-        <div className="w-full text-right mt-[73px]">
+        <div className="w-full text-right mt-[60px]">
           <button
             type="submit"
             className="px-5 py-1 w-fit h-fit bg-[#6f6d73] hover:bg-[#9E77DC] rounded-[7px] text-[16px] font-semibold text-white"
