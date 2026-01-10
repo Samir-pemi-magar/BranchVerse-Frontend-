@@ -106,3 +106,17 @@ export const GetPersonalizedStories = async () => {
     throw err;
   }
 };
+
+export const GetFilteredStories = async (tags: string[] = []) => {
+  try {
+    // Convert array to comma-separated string for query param
+    const tagsQuery = tags.join(",");
+    const res = await axiosInstance.get(`/api/stories/feed/filter?tags=${tagsQuery}`);
+    return res.data; // filtered stories array
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};

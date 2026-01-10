@@ -19,7 +19,10 @@ export default function Navbar() {
           >
             Home
           </p>
-          <p className="hover:underline hover:text-[#00B8AE] hover:cursor-pointer">
+          <p
+            className="hover:underline hover:text-[#00B8AE] hover:cursor-pointer"
+            onClick={() => router.push("/Users/StoryExplorer")}
+          >
             Stories
           </p>
           <p className="hover:underline hover:text-[#00B8AE] hover:cursor-pointer">
