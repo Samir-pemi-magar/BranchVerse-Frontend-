@@ -1,10 +1,11 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getSingleStory } from "@/src/Services/storyApi";
+import { getSingleStory, GetMainChapters } from "@/src/Services/storyApi";
 import { MdDateRange } from "react-icons/md";
 import { FaEye } from "react-icons/fa";
 import { FcLike } from "react-icons/fc";
+import Link from "next/link";
 
 interface Author {
   _id: string;
@@ -25,6 +26,12 @@ export interface Story {
   createdAt: string; // ISO date string
   __v: number;
 }
+export interface Chapter {
+  length: number;
+  _id: string;
+  title: string;
+  chapterNumber: number;
+}
 
 export default function StoryPreview() {
   const searchParams = useSearchParams();
@@ -34,6 +41,7 @@ export default function StoryPreview() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState(false);
   const [tags, settags] = useState<string[]>([]); // explicitly string array
+  const [chapters, setChapters] = useState<Chapter[]>([]);
 
   const coverSrc =
     story?.cover && process.env.NEXT_PUBLIC_BASEURL
@@ -62,8 +70,23 @@ export default function StoryPreview() {
         setLoading(false);
       }
     };
+    const getMainChapters = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const data = await GetMainChapters(storyId);
+        setChapters(data);
+      } catch (err) {
+        console.error("Failed to fetch Chapters", err);
+        setError("Failed to load Chapters");
+        setStory(null);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchSingleStory();
+    getMainChapters();
   }, [storyId]);
 
   return (
@@ -120,9 +143,14 @@ export default function StoryPreview() {
             </div>
           </div>
           <div className="flex flex-row gap-5">
-            <button className="h-[43px] w-fit px-2 py-1 bg-[#00B8AE] rounded-[7px] font-semibold text-white">
-              Start Reading
-            </button>
+            {story && chapters && chapters.length > 0 && (
+              <Link
+                href={`/Users/StoryReader?storyId=${storyId}&chapterId=${chapters[0]._id}`}
+                className="h-[43px] w-fit px-2 py-1 bg-[#00B8AE] rounded-[7px] font-semibold text-white flex items-center"
+              >
+                Start Reading
+              </Link>
+            )}
             <button className="h-[43px] px-2 py-1 bg-[#00B8AE] w-fit rounded-[7px] font-semibold text-white">
               Branch This Story
             </button>
