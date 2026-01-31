@@ -36,7 +36,7 @@ export const WriteStory = async (data: ChapterData) => {
 export const GetAllStories = async () => {
   try {
     const res = await axiosInstance.get("/api/stories");
-    return res.data; // array of stories
+    return res.data;
   } catch (err) {
     if (axios.isAxiosError(err)) {
       throw err.response?.data || err.message;
