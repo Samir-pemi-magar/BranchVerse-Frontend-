@@ -164,7 +164,7 @@ export default function Home() {
   // -----------------------
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
     );
   };
 
@@ -209,7 +209,7 @@ export default function Home() {
         s.title.toLowerCase().includes(q) ||
         s.description.toLowerCase().includes(q) ||
         s.tags.some((t) => t.toLowerCase().includes(q)) ||
-        s.author.username.toLowerCase().includes(q)
+        s.author.username.toLowerCase().includes(q),
     );
   }, [stories, search]);
 
@@ -264,7 +264,7 @@ export default function Home() {
                     strokeLinecap="round"
                     strokeLinejoin="round"
                     strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 019 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
+                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 009 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
                   />
                 </svg>
                 Filters
@@ -322,13 +322,17 @@ export default function Home() {
         {/* Trending */}
         {trendingStories.length > 0 && (
           <div className="mt-8 relative rounded-xl overflow-hidden shadow-md">
-            <div className="relative h-[420px] sm:h-[360px] md:h-[420px]">
+            <Link
+              href={`/Users/StoryPreview?id=${trendingStories[currentTrendingIndex]._id}`}
+              className="relative h-[420px] sm:h-[360px] md:h-[420px] block"
+              aria-label={`Open ${trendingStories[currentTrendingIndex].title}`}
+            >
               <img
                 src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${trendingStories[currentTrendingIndex].cover}`}
                 alt={trendingStories[currentTrendingIndex].title}
                 className="w-full h-full object-cover"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent p-6 flex flex-col justify-end">
+              <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent p-6 flex flex-col justify-end">
                 <div className="max-w-2xl">
                   <p className="text-white text-3xl font-bold tracking-wide">
                     {trendingStories[currentTrendingIndex].title}
@@ -343,7 +347,7 @@ export default function Home() {
                   </p>
                 </div>
               </div>
-            </div>
+            </Link>
 
             {/* Controls */}
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
@@ -351,20 +355,20 @@ export default function Home() {
                 onClick={() =>
                   setCurrentTrendingIndex(
                     (p) =>
-                      (p - 1 + trendingStories.length) % trendingStories.length
+                      (p - 1 + trendingStories.length) % trendingStories.length,
                   )
                 }
                 className="bg-white/80 p-2 rounded-full hover:bg-white shadow"
                 aria-label="Previous"
               >
                 ‹
-              </button>   
+              </button>
             </div>
             <div className="absolute right-4 top-1/2 -translate-y-1/2">
               <button
                 onClick={() =>
                   setCurrentTrendingIndex(
-                    (p) => (p + 1) % trendingStories.length
+                    (p) => (p + 1) % trendingStories.length,
                   )
                 }
                 className="bg-white/80 p-2 rounded-full hover:bg-white shadow"
@@ -420,7 +424,7 @@ export default function Home() {
               {visibleStories.map((story) => (
                 <Link
                   key={story._id}
-                  href={`/story/${story._id}`}
+                  href={`/Users/StoryPreview?id=${story._id}`}
                   className="bg-white border rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden flex flex-col"
                 >
                   <div className="relative h-[200px]">
@@ -508,7 +512,7 @@ export default function Home() {
                 {personalizedStories.map((story) => (
                   <Link
                     key={story._id}
-                    href={`/story/${story._id}`}
+                    href={`/Users/StoryPreview?id=${story._id}`}
                     className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition flex flex-col"
                   >
                     <img

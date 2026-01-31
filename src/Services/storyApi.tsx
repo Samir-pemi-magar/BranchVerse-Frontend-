@@ -57,10 +57,22 @@ export const GetMainChapters = async (storyId: string) => {
   }
 };
 
+export const getSingleStory = async (StoryID: string) => {
+  try {
+    const res = await axiosInstance.get(`/api/stories/${StoryID}`);
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
+  }
+};
+
 export const GetChapter = async (storyId: string, chapterId: string) => {
   try {
     const res = await axiosInstance.get(
-      `/api/chapters/read/${storyId}/${chapterId}`
+      `/api/chapters/read/${storyId}/${chapterId}`,
     );
     return res.data; // full chapter content
   } catch (err) {
@@ -111,7 +123,9 @@ export const GetFilteredStories = async (tags: string[] = []) => {
   try {
     // Convert array to comma-separated string for query param
     const tagsQuery = tags.join(",");
-    const res = await axiosInstance.get(`/api/stories/feed/filter?tags=${tagsQuery}`);
+    const res = await axiosInstance.get(
+      `/api/stories/feed/filter?tags=${tagsQuery}`,
+    );
     return res.data; // filtered stories array
   } catch (err) {
     if (axios.isAxiosError(err)) {
