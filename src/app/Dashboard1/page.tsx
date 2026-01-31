@@ -1,6 +1,78 @@
+"use client";
 import Footer from "@/src/component/Footer";
+import { GetAllStories, GetTrendingStories } from "@/src/Services/storyApi";
+import { useEffect, useState, useRef } from "react";
+interface Author {
+  _id: string;
+  username: string;
+}
+
+interface Story {
+  _id: string;
+  title: string;
+  cover: string;
+  tags: string[];
+  description: string;
+  author: Author;
+  views: number;
+  likes: number;
+  branchAllowed: boolean;
+  createdAt: string;
+  branchesCount: number;
+}
 
 export default function Dashboard() {
+  const [stories, setStories] = useState<Story[]>([]);
+  const [Trending, setTrending] = useState<Story[]>([]);
+  const [showMoreHighlights, setShowMoreHighlights] = useState(false);
+  const scrollerRef = useRef<HTMLDivElement | null>(null);
+  const [isHovered, setIsHovered] = useState(false);
+
+  useEffect(() => {
+    const fetchAllStories = async () => {
+      try {
+        const data = await GetAllStories();
+        setStories(data);
+      } catch (err) {
+        console.error("Failed to fetch all stories", err);
+      }
+    };
+
+    const fetchTrending = async () => {
+      try {
+        const data = await GetTrendingStories();
+        console.log("Trending API response:", data);
+        const list = Array.isArray(data)
+          ? data
+          : (data?.stories ?? data?.data ?? []);
+        setTrending(list);
+      } catch (err) {
+        console.error("Failed to fetch trending stories", err);
+      }
+    };
+
+    fetchAllStories();
+    fetchTrending();
+  }, []);
+
+  // auto-scroll effect
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || stories.length === 0) return;
+
+    const interval = setInterval(() => {
+      if (isHovered) return; // pause on hover
+      const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
+      if (Math.ceil(scroller.scrollLeft) >= maxScrollLeft) {
+        scroller.scrollTo({ left: 0, behavior: "smooth" });
+      } else {
+        scroller.scrollBy({ left: scroller.clientWidth, behavior: "smooth" });
+      }
+    }, 3500);
+
+    return () => clearInterval(interval);
+  }, [stories, isHovered]);
+
   return (
     <div className="flex flex-col items-center bg-white px-[76px] w-full h-screen py-[110px]">
       <div className="flex items-center justify-between flex-row w-full px-[66px]">
@@ -23,25 +95,109 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
-        <div>#image</div>
+        <div className="w-[500px] overflow-hidden">
+          <div
+            ref={scrollerRef}
+            onMouseEnter={() => setIsHovered(true)}
+            onMouseLeave={() => setIsHovered(false)}
+            className="flex space-x-6 overflow-x-auto snap-x snap-mandatory scroll-smooth"
+          >
+            {stories.map((story) => {
+              const coverSrc =
+                story?.cover && process.env.NEXT_PUBLIC_BASEURL
+                  ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                  : "/images/placeholder-cover.png";
+              return (
+                <div
+                  key={story._id}
+                  className="relative flex-shrink-0 min-w-full h-[300px] rounded-2xl overflow-hidden snap-center cursor-pointer group"
+                >
+                  <img
+                    src={coverSrc}
+                    alt={story.title}
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <p className="absolute bottom-4 left-4 text-white font-bold text-[20px] leading-tight max-w-[90%]">
+                    {story.title}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
       </div>
       <div className="w-full bg-[#F9F9F9] flex flex-col gap-[60px] items-center pb-[23px] px-[76px] mt-[91px]">
         <p className="mt-[85px] font-bold text-[36px]">Feature Highlights</p>
-        <div className="w-full flex flex-row space-x-[86px]">
-          <div className="w-[216px] h-[234px] bg-white rounded-2xl border border-[#D5D1D1]"></div>
+        <div className="grid grid-cols-3 gap-4">
+          {Trending.length === 0 ? (
+            <p>No trending stories available.</p>
+          ) : (
+            Trending.map((story) => (
+              <div key={story._id} className="border rounded p-2">
+                <img
+                  src={
+                    story.cover
+                      ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                      : "/images/placeholder-cover.png"
+                  }
+                  alt={story.title}
+                  className="w-full h-[220px] object-cover rounded-md"
+                />
+                <h3 className="mt-2 font-bold">{story.title}</h3>
+                <p className="text-sm text-gray-500 line-clamp-2">
+                  {story.description}
+                </p>
+                <div className="flex space-x-2 mt-1">
+                  {story.tags?.filter(Boolean).map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="bg-yellow-200 text-yellow-800 px-2 rounded-full text-xs"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))
+          )}
         </div>
       </div>
       <div className="mt-[91px] w-full flex flex-col items-center gap-[60px]">
         <p className="font-bold text-[36px]">Discover Stories</p>
-        <div className="flex w-full px-[76px]">
-          <div className="w-[378px] h-[232px] bg-red-50 rounded-2xl flex flex-col items-start justify-end pb-[15px]">
-            <p className="ml-[15px] font-bold text-[18px] stroke-[1px] stroke-[#FFF2A7]">
-              Title
-            </p>
-            <div className="ml-[15px]  rounded-2xl h-5 w-[82px] text-center items-center justify-center flex flex-col text-white bg-[#9C75DB] text-[10px] font-bold">
-              <span className=" flex">24 Branches</span>
-            </div>
-          </div>
+        <div className="w-full flex flex-wrap justify-between px-[76px]">
+          {stories.length === 0 ? (
+            <p>No stories available.</p>
+          ) : (
+            // Pick 3 random stories
+            [...stories]
+              // eslint-disable-next-line react-hooks/purity
+              .sort(() => 0.5 - Math.random()) // shuffle
+              .slice(0, 3)
+              .map((story) => (
+                <div
+                  key={story._id}
+                  className="w-[420px] h-[250px] bg-red-50 rounded-2xl flex flex-col items-start justify-end pb-[15px] relative overflow-hidden"
+                >
+                  <img
+                    src={
+                      story.cover
+                        ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                        : "/images/placeholder-cover.png"
+                    }
+                    alt={story.title}
+                    className="absolute inset-0 w-full h-full object-cover rounded-2xl"
+                  />
+                  <div className="absolute inset-0 bg-black/30 rounded-2xl" />
+                  <p className="ml-[15px] font-bold text-[18px] text-white z-10 relative">
+                    {story.title}
+                  </p>
+                  <div className="ml-[15px] rounded-2xl h-5 w-[82px] text-center items-center justify-center flex flex-col text-white bg-[#9C75DB] text-[10px] font-bold z-10 relative">
+                    <span>{story.branchesCount ?? 0} Branches</span>
+                  </div>
+                </div>
+              ))
+          )}
         </div>
       </div>
       <div className="mt-[91px] pb-[91px] w-full flex flex-col items-center gap-[60px] bg-[#E0FFFE]">
