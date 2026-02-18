@@ -1,11 +1,18 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { getSingleStory, GetMainChapters } from "@/src/Services/storyApi";
+import {
+  getSingleStory,
+  GetMainChapters,
+  LikeStory,
+  GetPersonalizedStories,
+} from "@/src/Services/storyApi";
+import { getPreferences } from "@/src/Services/authapi";
 import { MdDateRange } from "react-icons/md";
 import { FaEye } from "react-icons/fa";
 import { FcLike } from "react-icons/fc";
 import Link from "next/link";
+import { useForm } from "react-hook-form";
 
 interface Author {
   _id: string;
@@ -34,19 +41,46 @@ export interface Chapter {
 }
 
 export default function StoryPreview() {
+  const [preferences, setPreferences] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const storyId = searchParams?.get("id") ?? "";
   const [story, setStory] = useState<Story | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expanded, setExpanded] = useState(false);
   const [tags, settags] = useState<string[]>([]); // explicitly string array
   const [chapters, setChapters] = useState<Chapter[]>([]);
+  const [likes, setLikes] = useState(0);
+  const [personalizedStories, setPersonalizedStories] = useState<Story[]>([]);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<FormData>();
+
+  const onSubmit = (data: FormData) => {
+    console.log(data); // { email, password }
+  };
 
   const coverSrc =
     story?.cover && process.env.NEXT_PUBLIC_BASEURL
       ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
       : "/images/placeholder-cover.png";
+  useEffect(() => {
+    const fetchPreferences = async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const data = await getPreferences(token);
+        if (data?.preferences?.genres) {
+          setPreferences(data.preferences.genres);
+        }
+      } catch (err) {
+        console.error("Failed to fetch preferences", err);
+      }
+    };
+    fetchPreferences();
+  }, []);
 
   useEffect(() => {
     if (!storyId) {
@@ -85,9 +119,26 @@ export default function StoryPreview() {
       }
     };
 
+    const fetchPersonalized = async () => {
+      try {
+        const data = await GetPersonalizedStories();
+        setPersonalizedStories(data);
+      } catch (err) {
+        console.error("Failed to fetch personalized stories", err);
+      }
+    };
+
     fetchSingleStory();
     getMainChapters();
-  }, [storyId]);
+    if (preferences.length > 0) {
+      fetchPersonalized();
+    }
+  }, [storyId, preferences]);
+
+  const handleLikeStory = async (id: string) => {
+    const res = await LikeStory(id);
+    setLikes(res.likes);
+  };
 
   return (
     <div className="py-[90px] w-full h-auto px-40 flex flex-col items-center gap-[47px]">
@@ -121,8 +172,13 @@ export default function StoryPreview() {
             Origin
           </span>
           <div className="flex flex-row gap-7">
-            <div className="flex flex-row gap-1.5 items-center">
-              <FcLike /> <span>{story?.likes}</span>
+            <div
+              className="flex flex-row gap-1.5 items-center"
+              onClick={() => {
+                handleLikeStory(storyId);
+              }}
+            >
+              <FcLike /> <span>{story?.likes ?? 0}</span>
             </div>
             <div className="flex flex-row gap-1.5 items-center">
               <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -230,8 +286,34 @@ export default function StoryPreview() {
         </div>
       </section>
 
-      <section className="flex flex-col w-full px-8 items-center">
+      <section className="flex flex-col w-full px-8 items-center gap-10 bg-gray-50 py-10">
         <span className="tex-[18px] font-semibold">More From BranchVerse</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-4 gap-6">
+          {personalizedStories.map((story) => (
+            <Link
+              key={story._id}
+              href={`/Users/StoryPreview?id=${story._id}`}
+              className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition flex flex-col"
+            >
+              <img
+                src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+                className="w-full h-[220px] rounded-lg object-cover"
+              />
+
+              <div className="mt-3 flex-1 flex flex-col">
+                <p className="text-[20px] font-bold">{story.title}</p>
+                <p className="text-sm text-gray-600 mt-1">
+                  By {story.author.username}
+                </p>
+
+                <div className="mt-3 flex items-center gap-2 text-[#00B8AE] font-semibold">
+                  <p>{story.branchesCount} Branches</p>
+                  <p className="text-sm text-gray-500">• {story.views} views</p>
+                </div>
+              </div>
+            </Link>
+          ))}
+        </div>
       </section>
     </div>
   );
