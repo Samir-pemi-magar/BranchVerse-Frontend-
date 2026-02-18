@@ -6,6 +6,7 @@ import {
   GetPersonalizedStories,
   GetRecommendedStories,
   GetFilteredStories,
+  LikeStory,
 } from "@/src/Services/storyApi";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
@@ -53,13 +54,14 @@ export default function Home() {
   const [stories, setStories] = useState<Story[]>([]);
   const [trendingStories, setTrendingStories] = useState<Story[]>([]);
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
-  const [recommendedStories, setRecommendedStories] = useState<Story[]>([]);
+  const [, setRecommendedStories] = useState<Story[]>([]);
   const [personalizedStories, setPersonalizedStories] = useState<Story[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [likes, setLikes] = useState(0);
 
   // -----------------------
   // Fetch all stories
@@ -212,6 +214,16 @@ export default function Home() {
         s.author.username.toLowerCase().includes(q),
     );
   }, [stories, search]);
+
+  const handleLikeStory = async (id: string) => {
+    const res = await LikeStory(id); // { likes: number }
+
+    setStories((prev) =>
+      prev.map((story) =>
+        story._id === id ? { ...story, likes: res.likes } : story,
+      ),
+    );
+  };
 
   return (
     <div className="pt-[90px] w-full bg-gray-50 min-h-screen">
@@ -472,7 +484,14 @@ export default function Home() {
                           <span>{story.views}</span>
                         </div>
 
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
+                        <div
+                          className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"
+                          onClick={async (e) => {
+                            e.preventDefault(); // prevent navigation
+                            e.stopPropagation(); // stop event from bubbling up
+                            await handleLikeStory(story._id);
+                          }}
+                        >
                           ❤️ <span>{story.likes}</span>
                         </div>
                       </div>
