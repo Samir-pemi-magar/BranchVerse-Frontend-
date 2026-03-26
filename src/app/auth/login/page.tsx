@@ -30,7 +30,7 @@ export default function Login() {
       toast.success(res.msg || "Login successful!", { id: toastId });
 
       // ✅ CHECK IF USER ALREADY HAS PREFERENCES
-      const prefRes = await getPreferences(res.token);
+      const prefRes = await getPreferences();
 
       if (!prefRes?.preferences || prefRes.preferences.genres.length === 0) {
         // First-time user → show modal

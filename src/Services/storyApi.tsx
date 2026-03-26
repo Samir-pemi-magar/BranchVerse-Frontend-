@@ -9,6 +9,28 @@ interface ChapterData {
   branchTitle?: string;
 }
 
+export interface Achievement {
+  name: string;
+  description: string;
+  date: string;
+  unlocked: boolean;
+}
+
+export interface Profile {
+  _id: string;
+  username: string; // match Mongoose model
+  email: string; // top-level email
+  description: string;
+  profilePicture?: string; // URL in frontend
+  totalStoriesWritten: number;
+  totalStoriesBranched: number;
+  totalLikes: number;
+  achievements: Achievement[];
+  contact: { facebook: string; instagram: string };
+  createdAt: string;
+  updatedAt: string;
+}
+
 export const CreateStory = async (data: FormData) => {
   try {
     const res = await axiosInstance.post("/api/stories", data);
@@ -83,6 +105,21 @@ export const GetChapter = async (storyId: string, chapterId: string) => {
         err.message
       : "Unknown error";
     throw new Error(message);
+  }
+};
+
+// Get all chapters in hierarchical structure (main + branches)
+export const GetChaptersHierarchy = async (storyId: string) => {
+  try {
+    const res = await axiosInstance.get(
+      `/api/chapters/story/${storyId}/hierarchy`,
+    );
+    return res.data; // will return nested chapters with branches
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data || err.message;
+    }
+    throw err;
   }
 };
 
@@ -205,5 +242,122 @@ export const ReplyToComment = async (
       throw err.response?.data || err.message;
     }
     throw err;
+  }
+};
+
+// 1️⃣ Popular This Week (7 stories)
+export const GetPopularThisWeek = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/feed/popular-week"); // adjust endpoint
+    return res.data; // array of stories
+  } catch (err) {
+    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
+    throw err;
+  }
+};
+
+// 2️⃣ Top Writers (3 authors)
+export const GetTopWriters = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/top-writers"); // adjust endpoint
+    return res.data; // array of authors
+  } catch (err) {
+    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
+    throw err;
+  }
+};
+
+// 3️⃣ Top Stories (3 stories)
+export const GetTopStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/top-stories"); // adjust endpoint
+    return res.data; // array of stories
+  } catch (err) {
+    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
+    throw err;
+  }
+};
+
+// Get logged-in user profile
+export const GetProfile = async (): Promise<Profile> => {
+  const res = await axiosInstance.get("/api/auth/profile");
+  return res.data;
+};
+
+// Get all achievements
+export const GetAllAchievements = async (): Promise<Achievement[]> => {
+  const res = await axiosInstance.get("/api/achievements");
+  return res.data;
+};
+
+// Get logged-in user's achievements
+export const GetUserAchievements = async (): Promise<Achievement[]> => {
+  const res = await axiosInstance.get("/api/achievements/me");
+  return res.data;
+};
+
+export const UpdateProfile = async (data: {
+  username?: string;
+  email?: string;
+  description?: string;
+  profilePicture?: File;
+  contact?: { facebook?: string; instagram?: string };
+}): Promise<Profile> => {
+  try {
+    const formData = new FormData();
+
+    if (data.username) formData.append("username", data.username);
+    if (data.email) formData.append("email", data.email);
+    if (data.description) formData.append("description", data.description);
+    if (data.contact) {
+      if (data.contact.facebook)
+        formData.append("contact[facebook]", data.contact.facebook);
+      if (data.contact.instagram)
+        formData.append("contact[instagram]", data.contact.instagram);
+    }
+    if (data.profilePicture)
+      formData.append("profilePicture", data.profilePicture);
+
+    const res = await axiosInstance.put("/api/auth/profile", formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
+
+    // backend now returns { msg, user } with full profilePicture URL
+    return res.data.user as Profile;
+  } catch (err) {
+    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
+    throw err;
+  }
+};
+
+export const GetMyStories = async () => {
+  try {
+    const res = await axiosInstance.get("/api/stories/my-stories");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      console.error("API ERROR:", err.response?.data);
+
+      throw new Error(
+        err.response?.data?.msg || err.message || "Failed to fetch stories",
+      );
+    }
+
+    console.error("UNKNOWN API ERROR:", err);
+    throw new Error("Unknown error occurred");
+  }
+};
+
+export const GetMyBranches = async () => {
+  try {
+    const res = await axiosInstance.get("/api/chapters/my-branches");
+    return res.data;
+  } catch (err) {
+    if (axios.isAxiosError(err)) {
+      throw new Error(
+        err.response?.data?.msg || err.message || "Failed to fetch branches",
+      );
+    }
+    throw new Error("Unknown error");
   }
 };

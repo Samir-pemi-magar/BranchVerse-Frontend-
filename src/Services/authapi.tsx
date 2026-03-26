@@ -1,4 +1,5 @@
 // utils/authApi.ts
+import axios from "axios";
 import axiosInstance from "./axiosinstance";
 
 interface SignupData {
@@ -18,29 +19,32 @@ interface PreferencesData {
 }
 
 export const signup = async (data: SignupData) => {
-  const response = await axiosInstance.post("/api/auth/signup", data);
+  const response = await axiosInstance.post("/api/auth/signup", data, {
+    headers: { "Content-Type": "application/json" },
+  });
   return response.data;
 };
-
 export const login = async (data: LoginData) => {
-  const response = await axiosInstance.post("/api/auth/login", data);
-  return response.data;
-};
-
-export const savePreferences = async (data: PreferencesData, token: string) => {
-  const response = await axiosInstance.post("/api/auth/preferences", data, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+  const response = await axiosInstance.post("/api/auth/login", data, {
+    headers: { "Content-Type": "application/json" },
   });
   return response.data;
 };
 
-export const getPreferences = async (token: string) => {
-  const response = await axiosInstance.get("/api/auth/preferences", {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+// ✅ interceptor will attach token automatically
+export const savePreferences = async (data: PreferencesData) => {
+  const response = await axiosInstance.post("/api/auth/preferences", data);
   return response.data;
+};
+
+export const getPreferences = async () => {
+  try {
+    const response = await axiosInstance.get("/api/auth/preferences");
+    return response.data;
+  } catch (err: unknown) {
+    if (axios.isAxiosError(err)) {
+      throw err.response?.data?.message || err.message;
+    }
+    throw new Error("Unexpected error occurred");
+  }
 };

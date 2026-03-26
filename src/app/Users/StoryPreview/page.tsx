@@ -13,6 +13,9 @@ import { FaEye } from "react-icons/fa";
 import { FcLike } from "react-icons/fc";
 import Link from "next/link";
 import { useForm } from "react-hook-form";
+import axiosInstance from "@/src/Services/axiosinstance";
+import { useRouter } from "next/navigation";
+import { GetChaptersHierarchy } from "@/src/Services/storyApi";
 
 interface Author {
   _id: string;
@@ -32,6 +35,7 @@ export interface Story {
   branchesCount: number;
   createdAt: string; // ISO date string
   __v: number;
+  branchedFrom?: string; // <-- Add this line
 }
 export interface Chapter {
   length: number;
@@ -39,8 +43,21 @@ export interface Chapter {
   title: string;
   chapterNumber: number;
 }
+export interface BranchChapter extends Chapter {
+  branchTitle?: string; // optional
+}
+
+interface ChapterNode extends Chapter {
+  branches?: ChapterNode[];
+}
+
+interface RenderBranchesProps {
+  branches: ChapterNode[];
+  storyId: string;
+}
 
 export default function StoryPreview() {
+  const router = useRouter();
   const [preferences, setPreferences] = useState<string[]>([]);
   const searchParams = useSearchParams();
   const storyId = searchParams?.get("id") ?? "";
@@ -61,6 +78,8 @@ export default function StoryPreview() {
     console.log(data); // { email, password }
   };
 
+  const [chapterHierarchy, setChapterHierarchy] = useState<ChapterNode[]>([]);
+
   const coverSrc =
     story?.cover && process.env.NEXT_PUBLIC_BASEURL
       ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
@@ -68,10 +87,7 @@ export default function StoryPreview() {
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
-
-        const data = await getPreferences(token);
+        const data = await getPreferences();
         if (data?.preferences?.genres) {
           setPreferences(data.preferences.genres);
         }
@@ -118,6 +134,16 @@ export default function StoryPreview() {
         setLoading(false);
       }
     };
+    const fetchHierarchy = async () => {
+      if (!storyId) return;
+
+      try {
+        const data = await GetChaptersHierarchy(storyId);
+        setChapterHierarchy(data);
+      } catch (err) {
+        console.error("Failed to fetch chapter hierarchy", err);
+      }
+    };
 
     const fetchPersonalized = async () => {
       try {
@@ -127,7 +153,7 @@ export default function StoryPreview() {
         console.error("Failed to fetch personalized stories", err);
       }
     };
-
+    fetchHierarchy();
     fetchSingleStory();
     getMainChapters();
     if (preferences.length > 0) {
@@ -138,6 +164,39 @@ export default function StoryPreview() {
   const handleLikeStory = async (id: string) => {
     const res = await LikeStory(id);
     setLikes(res.likes);
+  };
+
+  const handleBranchStory = () => {
+    if (chapters.length === 0) return; // no chapter to branch from
+    const firstChapter = chapters[0];
+    router.push(
+      `/Users/Storycreate?storyId=${storyId}&parentChapterId=${firstChapter._id}`,
+    );
+  };
+  const RenderBranches: React.FC<RenderBranchesProps> = ({
+    branches,
+    storyId,
+  }) => {
+    return (
+      <ul className="mt-3 ml-4 border-l-2 border-gray-200 pl-4 space-y-2">
+        {branches.map((b: ChapterNode) => (
+          <li key={b._id}>
+            <Link
+              href={`/Users/StoryReader?storyId=${storyId}&chapterId=${b._id}`}
+              className="text-gray-700 text-sm flex items-center gap-2 group hover:text-purple-600"
+            >
+              <span className="w-2 h-2 rounded-full bg-purple-400 inline-block"></span>
+              <span className="font-medium">{b.title}</span>
+            </Link>
+
+            {/* Recursive call */}
+            {b.branches && b.branches.length > 0 && (
+              <RenderBranches branches={b.branches} storyId={storyId} />
+            )}
+          </li>
+        ))}
+      </ul>
+    );
   };
 
   return (
@@ -168,8 +227,8 @@ export default function StoryPreview() {
               </span>
             </div>
           </div>
-          <span className="w-[103px] h-[33px] items-center justify-center font-bold text-white bg-[#9E77DC] rounded-full px-4 py-1">
-            Origin
+          <span className="w-[103px] h-[33px] flex items-center justify-center font-bold text-white bg-[#9E77DC] rounded-full px-4 py-1">
+            {story?.branchedFrom || "Origin"}
           </span>
           <div className="flex flex-row gap-7">
             <div
@@ -207,7 +266,10 @@ export default function StoryPreview() {
                 Start Reading
               </Link>
             )}
-            <button className="h-[43px] px-2 py-1 bg-[#00B8AE] w-fit rounded-[7px] font-semibold text-white">
+            <button
+              className="h-[43px] px-2 py-1 bg-[#00B8AE] w-fit rounded-[7px] font-semibold text-white"
+              onClick={handleBranchStory}
+            >
               Branch This Story
             </button>
           </div>
@@ -250,12 +312,9 @@ export default function StoryPreview() {
             </div>
             <div className="text-sm">
               <span className="text-slate-500">Branched from:&nbsp;</span>
-              <a
-                href="#"
-                className="text-teal-500 font-semibold hover:underline"
-              >
-                The Last Sentinel
-              </a>
+              <span className="text-teal-500 font-semibold">
+                {story?.branchedFrom || "Origin"}
+              </span>
             </div>
           </div>
 
@@ -270,12 +329,9 @@ export default function StoryPreview() {
             </div>
             <div className="text-sm">
               <span className="text-slate-500">Branches:&nbsp;</span>
-              <a
-                href="#"
-                className="text-purple-500 font-semibold hover:underline"
-              >
-                {story?.branchesCount}
-              </a>
+              <span className="text-purple-500 font-semibold">
+                {story?.branchesCount || 0}
+              </span>
             </div>
           </div>
         </div>
@@ -283,6 +339,30 @@ export default function StoryPreview() {
         <div className="mt-8 pt-6 border-t border-slate-600 text-xs text-slate-400">
           Explore the different paths this story can take, or create your own
           branch!
+        </div>
+
+        <div className="mt-6 w-full">
+          {chapterHierarchy.map((chapter) => (
+            <div
+              key={chapter._id}
+              className="mb-6 p-4 rounded-lg border border-gray-200 bg-white shadow-sm hover:shadow-md transition"
+            >
+              {/* Main chapter */}
+              <Link
+                href={`/Users/StoryReader?storyId=${storyId}&chapterId=${chapter._id}`}
+                className="flex items-center justify-between cursor-pointer"
+              >
+                <span className="font-semibold text-lg text-teal-700">
+                  Chapter {chapter.chapterNumber}: {chapter.title}
+                </span>
+              </Link>
+
+              {/* Recursive Branches */}
+              {chapter.branches && chapter.branches.length > 0 && (
+                <RenderBranches branches={chapter.branches} storyId={storyId} />
+              )}
+            </div>
+          ))}
         </div>
       </section>
 
