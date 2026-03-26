@@ -90,11 +90,13 @@ export default function Home() {
   // -----------------------
   useEffect(() => {
     const fetchPreferences = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+      const token = localStorage.getItem("token");
 
-        const data = await getPreferences(token);
+      // 🚨 If no token → user not logged in → skip request
+      if (!token) return;
+
+      try {
+        const data = await getPreferences();
         if (data?.preferences?.genres) {
           setPreferences(data.preferences.genres);
         }
@@ -102,6 +104,7 @@ export default function Home() {
         console.error("Failed to fetch preferences", err);
       }
     };
+
     fetchPreferences();
   }, []);
 

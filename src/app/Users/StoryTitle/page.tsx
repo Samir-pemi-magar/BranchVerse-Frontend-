@@ -11,6 +11,7 @@ export interface StoryFormData {
   tags: string[];
   cover: FileList;
   branchAllowed: boolean;
+  genre: string[];
 }
 
 export default function StoryTitle() {
@@ -27,6 +28,15 @@ export default function StoryTitle() {
 
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingData, setPendingData] = useState<StoryFormData | null>(null);
+  const [customGenre, setCustomGenre] = useState("");
+
+  const addCustomGenre = () => {
+    if (!customGenre.trim()) return;
+    // Merge custom genre into form data
+    const currentGenres = watch("genre") || [];
+    setValue("genre", [...currentGenres, customGenre.trim()]);
+    setCustomGenre(""); // reset input
+  };
 
   const addTag = () => {
     if (!tagInput.trim()) return;
@@ -46,7 +56,10 @@ export default function StoryTitle() {
     formData.append("title", pendingData.title);
     formData.append("description", pendingData.description || "");
     formData.append("branchAllowed", String(isBranchable));
+
     pendingData.tags.forEach((tag) => formData.append("tags[]", tag));
+    pendingData.genre?.forEach((g) => formData.append("genre[]", g));
+
     formData.append("cover", pendingData.cover[0]);
 
     try {
@@ -55,7 +68,6 @@ export default function StoryTitle() {
       router.push(`/Users/Storycreate?storyId=${res.storyId}`);
     } catch (err) {
       console.error(err);
-      console.log("error check");
     } finally {
       setShowConfirm(false);
       setPendingData(null);
@@ -118,33 +130,105 @@ export default function StoryTitle() {
                   />
                 </section>
               </section>
+
+              <section className="flex flex-col gap-[9px]">
+                <p className="font-semibold text-[15px]">Genre</p>
+
+                {/* Checkboxes in a row */}
+                <div className="flex flex-row gap-4 flex-wrap">
+                  {["Fantasy", "Romance", "Sci-Fi", "Horror", "Mystery"].map(
+                    (g) => (
+                      <label key={g} className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          value={g}
+                          {...register("genre")}
+                        />
+                        <span className="text-[14px]">{g}</span>
+                      </label>
+                    ),
+                  )}
+                </div>
+
+                {/* Custom genre input below checkboxes */}
+                <div className="flex flex-col gap-1 mt-2">
+                  <p className="text-[14px] font-medium">Other Genre</p>
+                  <input
+                    type="text"
+                    placeholder="Enter custom genre..."
+                    value={customGenre}
+                    onChange={(e) => setCustomGenre(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        addCustomGenre();
+                      }
+                    }}
+                    className="border border-[#A7A3A3]/49 rounded-[7px] h-10 px-2.5"
+                  />
+                </div>
+              </section>
             </div>
 
             {/* Cover */}
             <div className="flex flex-col gap-[9px]">
               <p className="text-[15px] font-semibold">Story Cover</p>
+
+              {/* Hidden file input reference */}
               <input
                 type="file"
                 accept="image/*"
                 {...register("cover", { required: true })}
-                className="border border-[#A7A3A3]/50 rounded-[7px] w-[620px] h-[301px] outline-none px-2.5"
+                className="hidden"
+                id="coverInput"
               />
+
+              {/* Preview image */}
+              {watch("cover") && watch("cover").length > 0 ? (
+                <img
+                  src={URL.createObjectURL(watch("cover")[0])}
+                  alt="Cover Preview"
+                  className="w-[620px] h-[301px] object-cover rounded-[7px] border border-[#A7A3A3]/50 cursor-pointer"
+                  onClick={() => {
+                    const fileInput = document.getElementById(
+                      "coverInput",
+                    ) as HTMLInputElement;
+                    fileInput.click(); // Open file selector on click
+                  }}
+                />
+              ) : (
+                <label
+                  htmlFor="coverInput"
+                  className="flex items-center justify-center w-[620px] h-[301px] border border-[#A7A3A3]/50 rounded-[7px] cursor-pointer text-gray-400"
+                >
+                  Click to select cover image
+                </label>
+              )}
             </div>
           </div>
         </div>
 
         {/* Branch */}
-        <div className="w-full h-auto flex flex-col gap-[26px] mt-[73px]">
-          <p className="font-semibold text-[20px]">Branching Option</p>
+        <div className="w-full h-auto flex flex-col gap-6 mt-12 p-6 bg-[#F9F7FD] rounded-xl shadow-sm">
+          <p className="font-bold text-xl text-[#4B3E8B]">Branching Option</p>
 
           <div className="flex flex-col gap-4">
-            <p className="font-semibold text-[15px]">This is the main Branch</p>
+            <p className="font-semibold text-base text-gray-700">
+              This story is the main branch
+            </p>
 
-            <section className="flex flex-col gap-[9px]">
-              <p className="font-semibold text-[15px]">Parent Story</p>
-              <p className="px-5 py-1 w-fit h-fit bg-[#9E77DC] rounded-[15px] text-[16px] font-semibold text-white">
-                Origin
-              </p>
+            <section className="flex flex-col gap-2">
+              <p className="text-sm font-medium text-gray-600">Parent Story</p>
+
+              <div className="flex items-center gap-2">
+                <span className="px-4 py-2 bg-[#9E77DC] rounded-full text-white font-semibold text-sm">
+                  Origin
+                </span>
+                <span className="text-xs text-gray-500">
+                  This is the root story; other branches can be created from
+                  here.
+                </span>
+              </div>
             </section>
           </div>
         </div>

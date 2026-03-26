@@ -37,7 +37,7 @@ export default function PreferencesModal({
 
   const toggleGenre = (genre: string) => {
     setSelectedGenres((prev) =>
-      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
+      prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre],
     );
   };
 
@@ -65,10 +65,7 @@ export default function PreferencesModal({
     }
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) throw new Error("No auth token found");
-
-      await savePreferences({ genres: selectedGenres, interests }, token);
+      await savePreferences({ genres: selectedGenres, interests });
       toast.success("Preferences saved!");
       onClose();
     } catch (err) {
