@@ -10,6 +10,8 @@ import {
 } from "@/src/Services/storyApi";
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import RecommendedStorycard from "@/src/component/RecommendedStorycard";
+import Link from "next/link";
 interface Author {
   _id: string;
   username: string;
@@ -43,12 +45,19 @@ export default function Home() {
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [isHovered, setIsHovered] = useState(false);
   const [popularStories, setPopularStories] = useState<Story[]>([]);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(
+    undefined,
+  );
 
   useEffect(() => {
     const fetchAllStories = async () => {
       try {
         const data = await GetAllStories();
-        setStories(data);
+        setStories(data.stories);
+        const userId = data?.currentUserId;
+        if (userId) {
+          setCurrentUserId(userId);
+        }
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       }
@@ -201,28 +210,47 @@ export default function Home() {
             ref={scrollerRef}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => setIsHovered(false)}
-            className="flex space-x-6 overflow-x-auto snap-x snap-mandatory scroll-smooth"
+            className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth py-4"
           >
             {stories.map((story) => {
               const coverSrc =
                 story?.cover && process.env.NEXT_PUBLIC_BASEURL
                   ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
                   : "/images/placeholder-cover.png";
+
               return (
-                <div
+                <Link
                   key={story._id}
-                  className="relative flex-shrink-0 min-w-full h-[300px] rounded-2xl overflow-hidden snap-center cursor-pointer group"
+                  href={`/Users/StoryPreview?id=${story._id}`}
+                  className="relative flex-shrink-0 w-full h-[300px] rounded-2xl overflow-hidden snap-center cursor-pointer group shadow-md hover:shadow-lg transition-shadow duration-300"
                 >
+                  {/* Cover image */}
                   <img
                     src={coverSrc}
                     alt={story.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 group-hover:brightness-110"
                   />
+
+                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-                  <p className="absolute bottom-4 left-4 text-white font-bold text-[20px] leading-tight max-w-[90%]">
-                    {story.title}
-                  </p>
-                </div>
+
+                  {/* Branchable badge */}
+                  {story.branchAllowed && (
+                    <div className="absolute top-3 left-3 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold z-10">
+                      Branchable
+                    </div>
+                  )}
+
+                  {/* Story title & author */}
+                  <div className="absolute bottom-4 left-4 z-10">
+                    <p className="text-white font-bold text-[20px] sm:text-[22px] md:text-[24px] line-clamp-2 max-w-[90%]">
+                      {story.title}
+                    </p>
+                    <p className="text-gray-200 text-xs mt-1">
+                      By {story.author.username} • {story.views} views
+                    </p>
+                  </div>
+                </Link>
               );
             })}
           </div>
@@ -235,104 +263,12 @@ export default function Home() {
           style={{ paddingLeft: "62px", paddingRight: "62px" }}
         >
           {recommendedStories.map((story) => (
-            <div
+            <RecommendedStorycard
               key={story._id}
-              className="flex flex-col gap-[10px] hover:cursor-pointer border border-2 rounded-md px-2 py-2 bg-white"
-            >
-              {/* IMAGE + BRANCHABLE BADGE */}
-              <div className="relative w-full">
-                {story.branchAllowed && (
-                  <span className="absolute top-3 left-3 bg-[#00B8AE] text-white text-sm font-semibold px-3 py-1 rounded-md shadow">
-                    Branchable
-                  </span>
-                )}
-
-                <img
-                  src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-                  alt={story.title}
-                  className="w-full h-[220px] object-cover rounded-md"
-                />
-              </div>
-
-              {/* TITLE + AUTHOR */}
-              <div>
-                <p className="font-bold text-[25px]">{story.title}</p>
-
-                <div className="flex flex-row gap-1 text-[14px] font-bold text-[#837E7E]">
-                  <p>By</p>
-                  <p>{story.author.username}</p>
-                </div>
-              </div>
-
-              {/* TAGS */}
-              <div className="flex flex-wrap gap-2">
-                {story.tags?.slice(0, 3).map((tag, idx) => (
-                  <span
-                    key={idx}
-                    className="px-2 py-1 text-xs bg-gray-200 rounded-full text-gray-700"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-
-              {/* BRANCH COUNT */}
-              <div className="flex flex-row gap-1 text-[#00B8AE] items-center">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path
-                    d="M5 10.038C5.32593 9.70547 5.71491 9.44134 6.14419 9.26104C6.57347 9.08075 7.0344 8.98791 7.5 8.98798H9.5C10.0871 8.98818 10.6555 8.78178 11.1056 8.40495C11.5557 8.02813 11.8589 7.50491 11.962 6.92698C11.4934 6.79646 11.0885 6.49965 10.8229 6.09209C10.5574 5.68454 10.4495 5.19418 10.5194 4.71281C10.5893 4.23144 10.8323 3.79205 11.2028 3.47689C11.5733 3.16173 12.046 2.9924 12.5324 3.0006C13.0187 3.00881 13.4854 3.19397 13.8451 3.52145C14.2048 3.84892 14.4328 4.29626 14.4864 4.77971C14.5401 5.26317 14.4157 5.74961 14.1366 6.14798C13.8575 6.54635 13.4427 6.82934 12.97 6.94398C12.8591 7.78581 12.446 8.55862 11.8076 9.11846C11.1692 9.6783 10.3491 9.98697 9.5 9.98698H7.5C6.9088 9.98682 6.33666 10.1962 5.88519 10.5779C5.43373 10.9596 5.13215 11.489 5.034 12.072C5.50167 12.2015 5.9063 12.4966 6.17247 12.9024C6.43865 13.3082 6.54822 13.7968 6.48078 14.2774C6.41333 14.758 6.17346 15.1976 5.80586 15.5144C5.43827 15.8312 4.96803 16.0036 4.48278 15.9993C3.99753 15.9951 3.53036 15.8146 3.16834 15.4915C2.80632 15.1683 2.57414 14.7246 2.51506 14.2429C2.45599 13.7612 2.57405 13.2745 2.84725 12.8735C3.12045 12.4724 3.53015 12.1843 4 12.063V3.93698C3.52868 3.81528 3.11791 3.52587 2.8447 3.12298C2.5715 2.72009 2.45461 2.23139 2.51595 1.74848C2.57728 1.26557 2.81264 0.821613 3.17789 0.499819C3.54314 0.178025 4.01322 0.000488281 4.5 0.000488281C4.98679 0.000488281 5.45687 0.178025 5.82212 0.499819C6.18737 0.821613 6.42273 1.26557 6.48406 1.74848C6.5454 2.23139 6.42851 2.72009 6.15531 3.12298C5.8821 3.52587 5.47133 3.81528 5 3.93698V10.038Z"
-                    fill="#00B8AE"
-                  />
-                </svg>
-                <p className="text-[14px] font-bold">
-                  {story.branchesCount} Branches
-                </p>
-              </div>
-              <div className="flex flex-row justify-start items-center gap-4 mt-1">
-                {/* Likes */}
-                <div
-                  className="flex items-center gap-1 text-red-500"
-                  onClick={() => {
-                    handleLikeStory(story._id);
-                  }}
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
-            4.42 3 7.5 3c1.74 0 3.41.81 
-            4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 
-            22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 
-            11.54L12 21.35z"
-                    />
-                  </svg>
-                  <span className="font-bold text-[14px]">{story.likes}</span>
-                </div>
-
-                {/* Views */}
-                <div className="flex items-center gap-1 text-gray-700">
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <path
-                      d="M12 5c-7.633 0-10 7-10 7s2.367 
-            7 10 7 10-7 10-7-2.367-7-10-7zm0 
-            12c-2.761 0-5-2.239-5-5s2.239-5 
-            5-5 5 2.239 5 5-2.239 5-5 
-            5zm0-8a3 3 0 100 6 3 3 0 000-6z"
-                    />
-                  </svg>
-                  <span className="font-bold text-[14px]">{story.views}</span>
-                </div>
-              </div>
-            </div>
+              story={story}
+              handleLikeStory={handleLikeStory} // optional
+              currentUserId={currentUserId}
+            />
           ))}
         </div>
       </div>

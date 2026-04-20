@@ -1,7 +1,13 @@
 "use client";
 import Footer from "@/src/component/Footer";
 import { GetAllStories, GetTrendingStories } from "@/src/Services/storyApi";
-import { useEffect, useState, useRef } from "react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
 interface Author {
   _id: string;
   username: string;
@@ -21,18 +27,34 @@ interface Story {
   branchesCount: number;
 }
 
+const formatToKPlus = (num: number) => {
+  if (num >= 1000000) {
+    return `${Math.floor(num / 1000000)}M+`;
+  }
+  if (num >= 1000) {
+    return `${Math.floor(num / 1000)}K+`;
+  }
+  return `${num}+`;
+};
+
 export default function Dashboard() {
   const [stories, setStories] = useState<Story[]>([]);
   const [Trending, setTrending] = useState<Story[]>([]);
   const [showMoreHighlights, setShowMoreHighlights] = useState(false);
   const scrollerRef = useRef<HTMLDivElement | null>(null);
   const [isHovered, setIsHovered] = useState(false);
+  const [animatedWriters, setAnimatedWriters] = useState("0");
+  const [animatedStories, setAnimatedStories] = useState("0");
+  const [animatedReaders, setAnimatedReaders] = useState("0");
+  const statsRef = useRef<HTMLDivElement | null>(null);
+  const [statsInView, setStatsInView] = useState(false);
+  const [hasAnimatedStats, setHasAnimatedStats] = useState(false);
 
   useEffect(() => {
     const fetchAllStories = async () => {
       try {
         const data = await GetAllStories();
-        setStories(data);
+        setStories(data.stories);
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       }
@@ -72,6 +94,89 @@ export default function Dashboard() {
 
     return () => clearInterval(interval);
   }, [stories, isHovered]);
+
+  const animateSlotNumber = (
+    target: number,
+    setter: Dispatch<SetStateAction<string>>,
+    duration = 1200,
+    startDelay = 0,
+  ) => {
+    const finalValue = formatToKPlus(target);
+    const finalChars = finalValue.split("");
+    const digitPositions = finalChars
+      .map((char, idx) => (/\d/.test(char) ? idx : -1))
+      .filter((idx) => idx >= 0);
+    const totalDigits = digitPositions.length;
+
+    let startTime: number | null = null;
+    let rafId: number;
+
+    const tick = (timestamp: number) => {
+      if (startTime === null) startTime = timestamp;
+      const elapsed = timestamp - startTime - startDelay;
+      if (elapsed < 0) {
+        rafId = requestAnimationFrame(tick);
+        return;
+      }
+
+      const progress = Math.min(elapsed / duration, 1);
+
+      const nextValue = finalChars
+        .map((char, idx) => {
+          if (!/\d/.test(char)) return char;
+          const positionIndex = digitPositions.indexOf(idx);
+          const reverseIndex = totalDigits - 1 - positionIndex;
+          const stopProgress = 0.1 + (reverseIndex / totalDigits) * 0.7;
+          return progress >= stopProgress
+            ? char
+            : `${Math.floor(Math.random() * 10)}`;
+        })
+        .join("");
+
+      setter(nextValue);
+
+      if (progress < 1) {
+        rafId = requestAnimationFrame(tick);
+      } else {
+        setter(finalValue);
+      }
+    };
+
+    rafId = requestAnimationFrame(tick);
+
+    return () => cancelAnimationFrame(rafId);
+  };
+
+  useEffect(() => {
+    const stop1 = animateSlotNumber(10000, setAnimatedWriters, 1300, 0);
+    const stop2 = animateSlotNumber(50000, setAnimatedStories, 1500, 100);
+    const stop3 = animateSlotNumber(120000, setAnimatedReaders, 1700, 200);
+
+    setHasAnimatedStats(true);
+
+    return () => {
+      stop1();
+      stop2();
+      stop3();
+    };
+  }, [statsInView, hasAnimatedStats]);
+
+  useEffect(() => {
+    const element = statsRef.current;
+    if (!element || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          setStatsInView(true);
+        }
+      },
+      { threshold: 0.35 },
+    );
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
 
   return (
     <div className="flex flex-col items-center bg-white px-[76px] w-full h-screen py-[110px]">
@@ -283,26 +388,33 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
-      <div className="flex flex-col gap-10 w-full items-center mt-[91px]">
-        <div className="flex flex-col w-full items-center gap-10">
-          <p className="font-bold text-[36px]">Join Our Thriving Community</p>
-          <div className="flex flex-row space-x-20">
-            <div className="flex flex-col gap-2 items-center ">
-              <p className="font-bold text-[48px] text-[#00B8AE]">10K+</p>
-              <p className="font-bold text-[18px] text-[#837E7E]">Writers</p>
-            </div>
-            <div className="flex flex-col gap-2 items-center ">
-              <p className="font-bold text-[48px] text-[#00B8AE]">50K+</p>
-              <p className="font-bold text-[18px] text-[#837E7E]">Stories</p>
-            </div>
-            <div className="flex flex-col gap-2 items-center ">
-              <p className="font-bold text-[48px] text-[#00B8AE]">120K+</p>
-              <p className="font-bold text-[18px] text-[#837E7E]">Readers</p>
-            </div>
+      <div
+        ref={statsRef}
+        className="flex flex-col gap-10 w-full max-w-[1200px] items-center mt-[91px] px-6"
+      >
+        <p className="font-bold text-[36px]">Join Our Thriving Community</p>
+        <div className="flex flex-col gap-8 md:flex-row md:space-x-20 items-center">
+          <div className="flex flex-col gap-2 items-center">
+            <p className="font-bold text-[48px] text-[#00B8AE] font-mono">
+              {animatedWriters}
+            </p>
+            <p className="font-bold text-[18px] text-[#837E7E]">Writers</p>
+          </div>
+          <div className="flex flex-col gap-2 items-center">
+            <p className="font-bold text-[48px] text-[#00B8AE] font-mono">
+              {animatedStories}
+            </p>
+            <p className="font-bold text-[18px] text-[#837E7E]">Stories</p>
+          </div>
+          <div className="flex flex-col gap-2 items-center">
+            <p className="font-bold text-[48px] text-[#00B8AE] font-mono">
+              {animatedReaders}
+            </p>
+            <p className="font-bold text-[18px] text-[#837E7E]">Readers</p>
           </div>
         </div>
-        <button className="w-[251px] h-[60px] rounded-[7px] bg-[#00B8AE] font-bold text-[18px] text-white">
-          Join The Community
+        <button className="mt-6 px-8 py-4 rounded-[7px] bg-[#00B8AE] font-bold text-[18px] text-white transition hover:bg-[#00938d]">
+          Join the Community
         </button>
       </div>
       <div className="mt-[91px]">

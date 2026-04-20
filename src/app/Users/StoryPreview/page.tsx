@@ -222,7 +222,14 @@ export default function StoryPreview() {
             </span>
             <div className="flex flex-row gap-[9px]">
               #Profileimage
-              <span className="font-semibold text-[16px]">
+              <span
+                onClick={() => {
+                  if (story?.author?._id) {
+                    router.push(`/Users/Profile?id=${story.author._id}`);
+                  }
+                }}
+                className="font-semibold text-[16px] hover:underline hover:text-[#00B8AE] cursor-pointer"
+              >
                 {story?.author?.username || "Unknown"}
               </span>
             </div>

@@ -1,5 +1,6 @@
 "use client";
 import { getPreferences } from "@/src/Services/authapi";
+import StoryCard from "@/src/component/AllStoryCard";
 import {
   GetAllStories,
   GetTrendingStories,
@@ -10,6 +11,7 @@ import {
 } from "@/src/Services/storyApi";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import RecommendedStorycard from "@/src/component/RecommendedStorycard";
 
 interface Author {
   _id: string;
@@ -62,6 +64,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [likes, setLikes] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState<string | undefined>(
+    undefined,
+  );
 
   // -----------------------
   // Fetch all stories
@@ -72,7 +77,12 @@ export default function Home() {
       try {
         setLoading(true);
         const data = await GetAllStories();
-        if (mounted) setStories(data);
+        console.log("this is the story", data);
+        if (mounted) setStories(data.stories);
+        const userId = data?.currentUserId;
+        if (userId) {
+          setCurrentUserId(userId);
+        }
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       } finally {
@@ -91,12 +101,14 @@ export default function Home() {
   useEffect(() => {
     const fetchPreferences = async () => {
       const token = localStorage.getItem("token");
-
-      // 🚨 If no token → user not logged in → skip request
       if (!token) return;
 
       try {
         const data = await getPreferences();
+
+        // DEBUG LOG: Look at this in your console!
+        console.log("Full API Response from getPreferences:", data);
+
         if (data?.preferences?.genres) {
           setPreferences(data.preferences.genres);
         }
@@ -108,6 +120,21 @@ export default function Home() {
     fetchPreferences();
   }, []);
 
+  useEffect(() => {
+    if (stories.length > 0) {
+      console.log("--- Debugging StoryCard Menu ---");
+      console.log("Current Logged-in User ID:", currentUserId);
+      console.log("Type of currentUserId:", typeof currentUserId);
+
+      console.log("First Story Author ID:", stories[0].author._id);
+      console.log("Type of Story Author ID:", typeof stories[0].author._id);
+
+      const match = String(currentUserId) === String(stories[0].author._id);
+      console.log("Do they match?:", match);
+      console.log("---------------------------------");
+    }
+  }, [currentUserId, stories]);
+
   // -----------------------
   // Fetch trending stories
   // -----------------------
@@ -115,6 +142,7 @@ export default function Home() {
     const fetchTrending = async () => {
       try {
         const data = await GetTrendingStories();
+        console.log("this is trending data", data);
         setTrendingStories(data.slice(0, 5));
       } catch (err) {
         console.error("Failed to fetch trending stories", err);
@@ -437,86 +465,12 @@ export default function Home() {
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
               {visibleStories.map((story) => (
-                <Link
+                <StoryCard
                   key={story._id}
-                  href={`/Users/StoryPreview?id=${story._id}`}
-                  className="bg-white border rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden flex flex-col"
-                >
-                  <div className="relative h-[200px]">
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-                      alt={story.title}
-                      className="w-full h-full object-cover"
-                    />
-                    {story.branchAllowed && (
-                      <div className="absolute top-3 left-3 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold">
-                        Branchable
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="p-4 flex-1 flex flex-col">
-                    <h3 className="font-bold text-lg text-gray-900 line-clamp-2">
-                      {story.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      By {story.author.username} • {timeAgo(story.createdAt)}
-                    </p>
-
-                    <p className="text-sm text-gray-600 mt-3 line-clamp-3">
-                      {story.description}
-                    </p>
-
-                    <div className="mt-4 flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="flex items-center gap-2 text-sm text-gray-500">
-                          <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            className="h-4 w-4"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={2}
-                              d="M15 10l4.553-2.276A2 2 0 0122 9.618V16a2 2 0 01-2 2h-4"
-                            />
-                          </svg>
-                          <span>{story.views}</span>
-                        </div>
-
-                        <div
-                          className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"
-                          onClick={async (e) => {
-                            e.preventDefault(); // prevent navigation
-                            e.stopPropagation(); // stop event from bubbling up
-                            await handleLikeStory(story._id);
-                          }}
-                        >
-                          ❤️ <span>{story.likes}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <div className="text-xs text-gray-500">
-                          {story.branchesCount} branches
-                        </div>
-                        <div className="flex gap-1">
-                          {story.tags.slice(0, 3).map((t, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
-                            >
-                              {t}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </Link>
+                  story={story}
+                  currentUserId={currentUserId}
+                  handleLikeStory={handleLikeStory}
+                />
               ))}
             </div>
           )}
@@ -532,30 +486,11 @@ export default function Home() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {personalizedStories.map((story) => (
-                  <Link
+                  <RecommendedStorycard
                     key={story._id}
-                    href={`/Users/StoryPreview?id=${story._id}`}
-                    className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition flex flex-col"
-                  >
-                    <img
-                      src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-                      className="w-full h-[220px] rounded-lg object-cover"
-                    />
-
-                    <div className="mt-3 flex-1 flex flex-col">
-                      <p className="text-[20px] font-bold">{story.title}</p>
-                      <p className="text-sm text-gray-600 mt-1">
-                        By {story.author.username}
-                      </p>
-
-                      <div className="mt-3 flex items-center gap-2 text-[#00B8AE] font-semibold">
-                        <p>{story.branchesCount} Branches</p>
-                        <p className="text-sm text-gray-500">
-                          • {story.views} views
-                        </p>
-                      </div>
-                    </div>
-                  </Link>
+                    story={story}
+                    handleLikeStory={handleLikeStory} // optional
+                  />
                 ))}
               </div>
             </div>

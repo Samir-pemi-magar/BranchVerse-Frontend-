@@ -5,12 +5,19 @@ import {
   CommentChapter,
   GetComments,
   ReplyToComment,
+  ToggleChapterBookmark,
 } from "@/src/Services/storyApi";
 import { useEffect, useState } from "react";
 import { MdDateRange } from "react-icons/md";
-import { FaEye, FaRegBookmark, FaComment } from "react-icons/fa";
+import { FaEye, FaRegBookmark, FaComment, FaBookmark } from "react-icons/fa";
 import { FcLike } from "react-icons/fc";
 import { PiGitBranch } from "react-icons/pi";
+import {
+  UpdateChapter,
+  DeleteChapter,
+  DisableChapter,
+  EnableChapter,
+} from "@/src/Services/storyApi";
 
 export interface Comment {
   _id: string;
@@ -36,7 +43,9 @@ export interface Chapter {
   cover?: string | null;
   tags?: string[];
   createdAt: string;
+  currentUserId?: string;
   comments?: Comment[];
+  bookmarked?: boolean;
   __v: number;
 }
 
@@ -52,13 +61,15 @@ export default function StoryReaderComponent({
   const [commentText, setCommentText] = useState("");
   const [loading, setLoading] = useState(false);
   const [replyText, setReplyText] = useState<{ [key: string]: string }>({});
-  const [activeReply, setActiveReply] = useState<string | null>(null); // comment/reply being replied to
-  const [activeMenu, setActiveMenu] = useState<string | null>(null); // menu open for which comment/reply
-  const [showCommentInput, setShowCommentInput] = useState(false); // toggle comment input visibility
+  const [activeReply, setActiveReply] = useState<string | null>(null);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [showCommentInput, setShowCommentInput] = useState(false);
+  const [chapterBookmarked, setChapterBookmarked] = useState(false);
 
   useEffect(() => {
     if (!ChapterContent?._id) return;
     setLikes(ChapterContent.likes ?? 0);
+    setChapterBookmarked(ChapterContent.bookmarked ?? false);
 
     const fetchComments = async () => {
       try {
@@ -71,6 +82,64 @@ export default function StoryReaderComponent({
 
     fetchComments();
   }, [ChapterContent]);
+
+  const handleBookmarkChapter = async () => {
+    if (!ChapterContent?._id) return;
+
+    try {
+      const res = await ToggleChapterBookmark(ChapterContent._id);
+      setChapterBookmarked(res.bookmarked);
+    } catch (err) {
+      console.error("Bookmark chapter failed:", err);
+    }
+  };
+
+  if (!ChapterContent) {
+    return <div className="p-10 text-red-500">No chapter loaded</div>;
+  }
+
+  const isAuthor = ChapterContent.currentUserId === ChapterContent.author;
+
+  const handleUpdateChapter = () => {
+    const params = new URLSearchParams({
+      chapterId: ChapterContent._id,
+      storyId: ChapterContent.storyId,
+      title: encodeURIComponent(ChapterContent.title),
+      content: encodeURIComponent(ChapterContent.content),
+    });
+    window.location.href = `/Users/StorychapterEdit?${params.toString()}`;
+  };
+
+  const handleDeleteChapter = async () => {
+    if (!ChapterContent?._id) return;
+
+    const confirmDelete = confirm(
+      "Are you sure? If this chapter has branches, it will be disabled instead.",
+    );
+    if (!confirmDelete) return;
+
+    try {
+      const res = await DeleteChapter(ChapterContent._id);
+      alert(res.message);
+
+      // redirect after delete
+      window.location.href = `/Users/StoryPreview?id=${ChapterContent.storyId}`;
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDisableChapter = async () => {
+    if (!ChapterContent?._id) return;
+
+    try {
+      const res = await DisableChapter(ChapterContent._id);
+      alert(res.message);
+      window.location.reload();
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   // ---------------- LIKE ----------------
   const handleLike = async () => {
@@ -235,6 +304,28 @@ export default function StoryReaderComponent({
           <span className="font-bold text-[48px] leading-[60px] tracking-[-1.2px]">
             {ChapterContent.title}
           </span>
+          {isAuthor && (
+            <div className="flex gap-2">
+              <button
+                onClick={handleUpdateChapter}
+                className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+              >
+                ✏️ Edit
+              </button>
+              <button
+                onClick={handleDisableChapter}
+                className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
+              >
+                🚫 Disable
+              </button>
+              <button
+                onClick={handleDeleteChapter}
+                className="text-sm px-3 py-1 border rounded text-red-500 hover:bg-gray-100"
+              >
+                🗑️ Delete
+              </button>
+            </div>
+          )}
 
           {/* AUTHOR + TAGS */}
           <div className="flex flex-col gap-5 -mt-3">
@@ -281,7 +372,10 @@ export default function StoryReaderComponent({
 
         {/* CONTENT */}
         <div className="flex flex-col w-full gap-10">
-          <p className="whitespace-pre-line">{ChapterContent.content}</p>
+          <div
+            className="prose max-w-none"
+            dangerouslySetInnerHTML={{ __html: ChapterContent.content }}
+          />
 
           {/* ACTION BUTTONS */}
           <div className="flex flex-col gap-5">
@@ -294,9 +388,16 @@ export default function StoryReaderComponent({
                 <FcLike />
                 <span>Like</span>
               </button>
-              <button className="flex gap-2 items-center border-2 px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition">
-                <FaRegBookmark />
-                <span>Bookmark</span>
+              <button
+                onClick={handleBookmarkChapter}
+                className={`flex gap-2 items-center border-2 px-4 py-1 rounded-sm font-semibold transition ${
+                  chapterBookmarked
+                    ? "bg-red-100 border-red-200 text-red-700 hover:bg-red-200"
+                    : "border-gray-200 hover:bg-[#00B8AE] hover:text-white"
+                }`}
+              >
+                {chapterBookmarked ? <FaBookmark /> : <FaRegBookmark />}
+                <span>{chapterBookmarked ? "Bookmarked" : "Bookmark"}</span>
               </button>
               <button
                 onClick={() => setShowCommentInput(!showCommentInput)}

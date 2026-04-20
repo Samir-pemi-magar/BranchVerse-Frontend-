@@ -102,7 +102,7 @@ export default function Login() {
 
         <div className="flex items-center mt-[39px] gap-[37px] justify-between bg-white border border-[#C1BBBB] py-[17px] px-15 rounded-[7px] h-[55px] w-full">
           <FaGoogle className="h-[34px] w-[34px]" />
-          <p className="text-[24px]">Login With Google</p>
+          <p className="text-[22px]">Login With Google</p>
         </div>
 
         <p className="text-[16px] flex flex-row gap-1 mt-[30px]">

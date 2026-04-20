@@ -123,3 +123,23 @@
     @apply bg-background text-foreground;
   }
 }
+@keyframes countUpPop {
+  0% {
+    transform: translateY(20px) scale(0.8);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  60% {
+    transform: translateY(-5px) scale(1.05);
+    opacity: 1;
+    filter: blur(0px);
+  }
+  100% {
+    transform: translateY(0px) scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-count {
+  animation: countUpPop 0.9s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

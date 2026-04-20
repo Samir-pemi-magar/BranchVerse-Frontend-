@@ -20,6 +20,7 @@ export interface Chapter {
   cover?: string | null;
   tags?: string[];
   createdAt: string;
+  currentUserId?: string;
   __v: number;
 }
 
