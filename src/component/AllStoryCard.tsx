@@ -6,6 +6,7 @@ import {
   DeleteStory,
   ToggleStoryBookmark,
 } from "../Services/storyApi";
+import { FaEye } from "react-icons/fa";
 
 // -----------------------
 // Interfaces
@@ -189,20 +190,7 @@ const StoryCard: React.FC<StoryCardProps> = ({
         <div className="mt-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-2 text-sm text-gray-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 10l4.553-2.276A2 2 0 0122 9.618V16a2 2 0 01-2 2h-4"
-                />
-              </svg>
+              <FaEye />
               <span>{story.views}</span>
             </div>
 

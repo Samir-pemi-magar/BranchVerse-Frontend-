@@ -6,6 +6,7 @@ import toast from "react-hot-toast";
 import { getPreferences, login as loginApi } from "@/src/Services/authapi";
 import PreferencesModal from "@/src/component/PreferencesModal";
 import { useState } from "react";
+import Link from "next/link";
 
 type LoginFormInputs = {
   email: string;
@@ -82,9 +83,12 @@ export default function Login() {
           </div>
 
           <div className="flex flex-col items-end w-full gap-[23px] mt-[13px]">
-            <p className="text-[#00B8AE] font-bold text-[18px]">
+            <Link
+              href="/auth/forgot-password"
+              className="text-[#00B8AE] font-bold text-[18px]"
+            >
               Forgot Password?
-            </p>
+            </Link>
             <button
               type="submit"
               className="w-full h-[55px] bg-linear-to-r from-[#15B0B7] to-[#957BDA] rounded-[7px]"
