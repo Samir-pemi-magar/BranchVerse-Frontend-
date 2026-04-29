@@ -12,6 +12,7 @@ import {
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import RecommendedStorycard from "@/src/component/RecommendedStorycard";
+import { useSearchParams } from "next/navigation";
 
 interface Author {
   _id: string;
@@ -33,7 +34,6 @@ interface Story {
   branchesCount: number;
 }
 
-// Preset tags for filtering
 const presetTags = ["Fantasy", "Romance", "Adventure", "Horror", "Sci-Fi"];
 
 function timeAgo(dateStr: string) {
@@ -62,11 +62,13 @@ export default function Home() {
   const [customTag, setCustomTag] = useState("");
   const [showFilter, setShowFilter] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [likes, setLikes] = useState(0);
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     undefined,
   );
+
+  // ✅ Read search query from URL (set by Navbar)
+  const searchParams = useSearchParams();
+  const search = searchParams.get("search") ?? "";
 
   // -----------------------
   // Fetch all stories
@@ -77,12 +79,9 @@ export default function Home() {
       try {
         setLoading(true);
         const data = await GetAllStories();
-        console.log("this is the story", data);
         if (mounted) setStories(data.stories);
         const userId = data?.currentUserId;
-        if (userId) {
-          setCurrentUserId(userId);
-        }
+        if (userId) setCurrentUserId(userId);
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       } finally {
@@ -102,38 +101,15 @@ export default function Home() {
     const fetchPreferences = async () => {
       const token = localStorage.getItem("token");
       if (!token) return;
-
       try {
         const data = await getPreferences();
-
-        // DEBUG LOG: Look at this in your console!
-        console.log("Full API Response from getPreferences:", data);
-
-        if (data?.preferences?.genres) {
-          setPreferences(data.preferences.genres);
-        }
+        if (data?.preferences?.genres) setPreferences(data.preferences.genres);
       } catch (err) {
         console.error("Failed to fetch preferences", err);
       }
     };
-
     fetchPreferences();
   }, []);
-
-  useEffect(() => {
-    if (stories.length > 0) {
-      console.log("--- Debugging StoryCard Menu ---");
-      console.log("Current Logged-in User ID:", currentUserId);
-      console.log("Type of currentUserId:", typeof currentUserId);
-
-      console.log("First Story Author ID:", stories[0].author._id);
-      console.log("Type of Story Author ID:", typeof stories[0].author._id);
-
-      const match = String(currentUserId) === String(stories[0].author._id);
-      console.log("Do they match?:", match);
-      console.log("---------------------------------");
-    }
-  }, [currentUserId, stories]);
 
   // -----------------------
   // Fetch trending stories
@@ -142,7 +118,6 @@ export default function Home() {
     const fetchTrending = async () => {
       try {
         const data = await GetTrendingStories();
-        console.log("this is trending data", data);
         setTrendingStories(data.slice(0, 5));
       } catch (err) {
         console.error("Failed to fetch trending stories", err);
@@ -155,6 +130,8 @@ export default function Home() {
   // Fetch recommended & personalized stories
   // -----------------------
   useEffect(() => {
+    if (preferences.length === 0) return;
+
     const fetchRecommended = async () => {
       try {
         const data = await GetRecommendedStories();
@@ -173,10 +150,8 @@ export default function Home() {
       }
     };
 
-    if (preferences.length > 0) {
-      fetchRecommended();
-      fetchPersonalized();
-    }
+    fetchRecommended();
+    fetchPersonalized();
   }, [preferences]);
 
   // -----------------------
@@ -184,16 +159,14 @@ export default function Home() {
   // -----------------------
   useEffect(() => {
     if (trendingStories.length === 0) return;
-
     const interval = setInterval(() => {
       setCurrentTrendingIndex((prev) => (prev + 1) % trendingStories.length);
     }, 4000);
-
     return () => clearInterval(interval);
   }, [trendingStories]);
 
   // -----------------------
-  // Handle tag selection & filter
+  // Tag filter handlers
   // -----------------------
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -205,10 +178,10 @@ export default function Home() {
     try {
       setLoading(true);
       const allTags = [...selectedTags];
-      if (customTag.trim() !== "") allTags.push(customTag.trim());
+      if (customTag.trim()) allTags.push(customTag.trim());
       const filtered = await GetFilteredStories(allTags);
       setStories(filtered);
-      setShowFilter(false); // close dropdown after applying
+      setShowFilter(false);
     } catch (err) {
       console.error("Failed to fetch filtered stories", err);
     } finally {
@@ -232,7 +205,7 @@ export default function Home() {
   };
 
   // -----------------------
-  // Derived visible stories (search)
+  // Filter stories by search (from URL)
   // -----------------------
   const visibleStories = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -247,8 +220,7 @@ export default function Home() {
   }, [stories, search]);
 
   const handleLikeStory = async (id: string) => {
-    const res = await LikeStory(id); // { likes: number }
-
+    const res = await LikeStory(id);
     setStories((prev) =>
       prev.map((story) =>
         story._id === id ? { ...story, likes: res.likes } : story,
@@ -259,7 +231,7 @@ export default function Home() {
   return (
     <div className="pt-[90px] w-full bg-gray-50 min-h-screen">
       <div className="max-w-[1400px] mx-auto px-6">
-        {/* Header */}
+        {/* Header — search input removed, only title + filter remain */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-3xl sm:text-4xl font-extrabold text-gray-900">
@@ -267,102 +239,92 @@ export default function Home() {
             </h1>
             <p className="text-sm text-gray-500 mt-1">
               Discover trending, recommended and curated stories.
+              {search && (
+                <span className="ml-2 text-[#00B8AE] font-medium">
+                  Results for &ldquo;{search}&rdquo;
+                </span>
+              )}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 w-full sm:w-auto">
-            <div className="relative w-full sm:w-[420px]">
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search by title, author or tag..."
-                className="w-full pl-4 pr-10 py-3 rounded-lg border bg-white shadow-sm focus:outline-none focus:ring-2 focus:ring-[#00B8AE]"
-              />
-              {search && (
-                <button
-                  onClick={() => setSearch("")}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                  aria-label="Clear search"
-                >
-                  ✕
-                </button>
-              )}
-            </div>
-
-            <div className="relative">
-              <button
-                onClick={() => setShowFilter((p) => !p)}
-                className="flex gap-2 px-4 py-2 border rounded-lg shadow-sm bg-white hover:bg-gray-100 transition"
-                aria-expanded={showFilter}
+          {/* Filter button only */}
+          <div className="relative">
+            <button
+              onClick={() => setShowFilter((p) => !p)}
+              className="flex gap-2 px-4 py-2 border rounded-lg shadow-sm bg-white hover:bg-gray-100 transition"
+              aria-expanded={showFilter}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 text-gray-700"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5 text-gray-700"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 009 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
-                  />
-                </svg>
-                Filters
-              </button>
-
-              {showFilter && (
-                <div className="absolute right-0 mt-2 w-[360px] bg-white border rounded-xl shadow-xl p-4 z-40">
-                  <div className="flex items-center justify-between mb-3">
-                    <p className="font-semibold text-gray-700">Tags</p>
-                    <button
-                      onClick={clearFilters}
-                      className="text-sm text-[#00B8AE] hover:underline"
-                    >
-                      Clear
-                    </button>
-                  </div>
-
-                  <div className="flex gap-2 flex-wrap mb-3">
-                    {presetTags.map((tag) => (
-                      <button
-                        key={tag}
-                        onClick={() => toggleTag(tag)}
-                        className={`px-3 py-1 rounded-full text-sm border transition ${
-                          selectedTags.includes(tag)
-                            ? "bg-[#00B8AE] text-white border-[#00B8AE]"
-                            : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-                        }`}
-                      >
-                        {tag}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      placeholder="Add custom tag"
-                      value={customTag}
-                      onChange={(e) => setCustomTag(e.target.value)}
-                      className="border p-2 rounded-lg flex-1"
-                    />
-                    <button
-                      onClick={handleFilter}
-                      className="bg-[#00B8AE] text-white px-4 py-2 rounded-lg hover:bg-[#009A94]"
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 009 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
+                />
+              </svg>
+              Filters
+              {selectedTags.length > 0 && (
+                <span className="bg-[#00B8AE] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                  {selectedTags.length}
+                </span>
               )}
-            </div>
+            </button>
+
+            {showFilter && (
+              <div className="absolute right-0 mt-2 w-[360px] bg-white border rounded-xl shadow-xl p-4 z-40">
+                <div className="flex items-center justify-between mb-3">
+                  <p className="font-semibold text-gray-700">Tags</p>
+                  <button
+                    onClick={clearFilters}
+                    className="text-sm text-[#00B8AE] hover:underline"
+                  >
+                    Clear
+                  </button>
+                </div>
+
+                <div className="flex gap-2 flex-wrap mb-3">
+                  {presetTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-1 rounded-full text-sm border transition ${
+                        selectedTags.includes(tag)
+                          ? "bg-[#00B8AE] text-white border-[#00B8AE]"
+                          : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
+                      }`}
+                    >
+                      {tag}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add custom tag"
+                    value={customTag}
+                    onChange={(e) => setCustomTag(e.target.value)}
+                    className="border p-2 rounded-lg flex-1"
+                  />
+                  <button
+                    onClick={handleFilter}
+                    className="bg-[#00B8AE] text-white px-4 py-2 rounded-lg hover:bg-[#009A94]"
+                  >
+                    Apply
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Trending */}
+        {/* Trending Carousel */}
         {trendingStories.length > 0 && (
           <div className="mt-8 relative rounded-xl overflow-hidden shadow-md">
             <Link
@@ -392,7 +354,6 @@ export default function Home() {
               </div>
             </Link>
 
-            {/* Controls */}
             <div className="absolute left-4 top-1/2 -translate-y-1/2">
               <button
                 onClick={() =>
@@ -421,15 +382,12 @@ export default function Home() {
               </button>
             </div>
 
-            {/* Indicators */}
             <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
               {trendingStories.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setCurrentTrendingIndex(i)}
-                  className={`w-3 h-3 rounded-full ${
-                    i === currentTrendingIndex ? "bg-white" : "bg-white/50"
-                  }`}
+                  className={`w-3 h-3 rounded-full ${i === currentTrendingIndex ? "bg-white" : "bg-white/50"}`}
                   aria-label={`Show slide ${i + 1}`}
                 />
               ))}
@@ -483,13 +441,12 @@ export default function Home() {
               <p className="font-bold text-[28px] text-gray-900 text-center mb-8">
                 Recommended For You
               </p>
-
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {personalizedStories.map((story) => (
                   <RecommendedStorycard
                     key={story._id}
                     story={story}
-                    handleLikeStory={handleLikeStory} // optional
+                    handleLikeStory={handleLikeStory}
                   />
                 ))}
               </div>

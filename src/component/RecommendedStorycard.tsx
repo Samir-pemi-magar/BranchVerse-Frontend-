@@ -42,6 +42,8 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
 
   const isAuthor =
     String(currentUserId).trim() === String(story.author._id).trim();
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(story.likes);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -179,14 +181,18 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
 
             {handleLikeStory && (
               <div
-                className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"
+                className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
+                  liked ? "text-red-500" : "text-gray-400"
+                }`}
                 onClick={async (e) => {
                   e.preventDefault();
                   e.stopPropagation();
+                  setLiked((prev) => !prev);
+                  setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
                   await handleLikeStory(story._id);
                 }}
               >
-                ❤️ <span>{story.likes}</span>
+                {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
               </div>
             )}
           </div>

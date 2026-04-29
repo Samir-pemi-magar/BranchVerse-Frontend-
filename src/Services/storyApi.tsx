@@ -272,26 +272,16 @@ export const GetPopularThisWeek = async () => {
   }
 };
 
-// 2️⃣ Top Writers (3 authors)
+// In storyApi.ts
+
 export const GetTopWriters = async () => {
-  try {
-    const res = await axiosInstance.get("/api/stories/top-writers"); // adjust endpoint
-    return res.data; // array of authors
-  } catch (err) {
-    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
-    throw err;
-  }
+  const res = await axiosInstance.get("/api/stories/feed/top-writers-week"); // ✅
+  return res.data;
 };
 
-// 3️⃣ Top Stories (3 stories)
 export const GetTopStories = async () => {
-  try {
-    const res = await axiosInstance.get("/api/stories/top-stories"); // adjust endpoint
-    return res.data; // array of stories
-  } catch (err) {
-    if (axios.isAxiosError(err)) throw err.response?.data || err.message;
-    throw err;
-  }
+  const res = await axiosInstance.get("/api/stories/feed/top-stories"); // ✅
+  return res.data;
 };
 
 export const GetProfile = async (): Promise<Profile> => {

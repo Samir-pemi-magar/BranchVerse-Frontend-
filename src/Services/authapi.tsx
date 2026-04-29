@@ -63,3 +63,77 @@ export const resetPassword = async (token: string, password: string) => {
   );
   return response.data;
 };
+
+// ─── Chat ────────────────────────────────────────────────────────────────────
+
+export const getMyConversations = async () => {
+  const response = await axiosInstance.get("/api/chat");
+  return response.data;
+};
+
+export const getOrCreateDM = async (userId: string) => {
+  const response = await axiosInstance.get(`/api/chat/dm/${userId}`);
+  return response.data;
+};
+
+export const createGroup = async (name: string, participants: string[]) => {
+  const response = await axiosInstance.post("/api/chat/group", {
+    name,
+    participants,
+  });
+  return response.data;
+};
+
+export const renameGroup = async (conversationId: string, name: string) => {
+  const response = await axiosInstance.put(
+    `/api/chat/group/${conversationId}/rename`,
+    { name },
+  );
+  return response.data;
+};
+
+export const addToGroup = async (conversationId: string, userId: string) => {
+  const response = await axiosInstance.put(
+    `/api/chat/group/${conversationId}/add`,
+    { userId },
+  );
+  return response.data;
+};
+
+export const removeFromGroup = async (
+  conversationId: string,
+  userId: string,
+) => {
+  const response = await axiosInstance.put(
+    `/api/chat/group/${conversationId}/remove`,
+    { userId },
+  );
+  return response.data;
+};
+
+// ─── Messages ────────────────────────────────────────────────────────────────
+
+export const sendMessage = async (conversationId: string, content: string) => {
+  const response = await axiosInstance.post("/api/message", {
+    conversationId,
+    content,
+  });
+  return response.data;
+};
+
+export const getMessages = async (conversationId: string, page = 1) => {
+  const response = await axiosInstance.get(
+    `/api/message/${conversationId}?page=${page}`,
+  );
+  return response.data;
+};
+
+export const markAsRead = async (messageId: string) => {
+  const response = await axiosInstance.put(`/api/message/${messageId}/read`);
+  return response.data;
+};
+
+export const deleteMessage = async (messageId: string) => {
+  const response = await axiosInstance.delete(`/api/message/${messageId}`);
+  return response.data;
+};

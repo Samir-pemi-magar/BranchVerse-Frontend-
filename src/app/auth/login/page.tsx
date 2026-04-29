@@ -25,8 +25,10 @@ export default function Login() {
         email: data.email,
         password: data.password,
       });
+      console.log("LOGIN RESPONSE:", res);
 
       localStorage.setItem("token", res.token);
+      localStorage.setItem("userId", res.user._id);
 
       toast.success(res.msg || "Login successful!", { id: toastId });
 

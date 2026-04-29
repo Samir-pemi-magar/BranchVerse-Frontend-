@@ -49,6 +49,8 @@ const StoryCard: React.FC<StoryCardProps> = ({
   const [menuOpen, setMenuOpen] = useState(false);
   const router = useRouter();
   const [bookmarked, setBookmarked] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(story.likes);
 
   const isAuthor =
     String(currentUserId).trim() === String(story.author._id).trim();
@@ -195,15 +197,18 @@ const StoryCard: React.FC<StoryCardProps> = ({
             </div>
 
             <div
-              className="flex items-center gap-2 text-sm text-gray-500 cursor-pointer"
+              className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
+                liked ? "text-red-500" : "text-gray-400"
+              }`}
               onClick={(e) => {
                 e.stopPropagation();
+                setLiked((prev) => !prev);
+                setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
                 handleLikeStory(story._id);
               }}
             >
-              ❤️ <span>{story.likes}</span>
+              {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
             </div>
-
             <button
               type="button"
               onClick={handleBookmark}
