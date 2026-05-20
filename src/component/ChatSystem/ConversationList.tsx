@@ -1,11 +1,12 @@
 import { Conversation } from "./ChatPage";
+import { useState } from "react";
 
 interface Props {
   conversations: Conversation[];
   selected: Conversation | null;
   onSelect: (conv: Conversation) => void;
 }
-import { useState } from "react";
+
 function getDisplayName(conv: Conversation, currentUserId: string): string {
   if (conv.type === "group") return conv.name || "Unnamed group";
   const other = conv.participants.find((p) => p._id !== currentUserId);
@@ -33,7 +34,6 @@ export default function ConversationList({
   selected,
   onSelect,
 }: Props) {
-  // Read current user id from localStorage (set it when you save the token)
   const [currentUserId] = useState(() => localStorage.getItem("userId") || "");
 
   return (
@@ -59,12 +59,12 @@ export default function ConversationList({
 
               {/* Name + preview */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2">
                   <span className="text-sm font-medium text-black truncate">
                     {name}
                   </span>
                   {time && (
-                    <span className="text-xs text-gray-400 ml-2 flex-shrink-0">
+                    <span className="text-xs text-gray-400 flex-shrink-0">
                       {time}
                     </span>
                   )}

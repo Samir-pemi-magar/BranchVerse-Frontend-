@@ -7,11 +7,10 @@ export default function AuthLayout({
 }) {
   return (
     <div className="min-h-screen flex flex-col">
-      {/* ✅ Shared Navbar */}
       <StarterNavbar />
 
-      {/* ✅ Page Content */}
-      {children}
+      {/* Push content below the fixed 71px navbar */}
+      <main className="flex-1 pt-[71px]">{children}</main>
     </div>
   );
 }

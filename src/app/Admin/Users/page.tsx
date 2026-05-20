@@ -101,29 +101,34 @@ export default function UsersPage() {
   };
 
   return (
-    <div>
-      <div className="mb-10">
+    <div className="px-4 sm:px-0">
+      <div className="mb-8 sm:mb-10">
         <p className="text-xs tracking-widest text-neutral-500 mb-2 uppercase">
           Moderation
         </p>
-        <h1 className="text-3xl font-bold text-white tracking-tight">Users</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
+          Users
+        </h1>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
+      {/* Search bar */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && load(1, search)}
           placeholder="Search username or email…"
-          className="flex-1 max-w-sm px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-200 text-sm font-mono placeholder:text-neutral-600 outline-none focus:border-neutral-500 transition-colors"
+          className="flex-1 min-w-0 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-200 text-sm font-mono placeholder:text-neutral-600 outline-none focus:border-neutral-500 transition-colors"
         />
         <button
           onClick={() => load(1, search)}
-          className="px-5 py-2.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono"
+          className="px-5 py-2.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono shrink-0"
         >
           SEARCH
         </button>
-        <span className="ml-auto text-xs text-neutral-600">{total} total</span>
+        <span className="w-full sm:w-auto sm:ml-auto text-xs text-neutral-600">
+          {total} total
+        </span>
       </div>
 
       {msg && (
@@ -132,7 +137,8 @@ export default function UsersPage() {
         </div>
       )}
 
-      <div className="border border-neutral-800 overflow-hidden">
+      {/* Desktop table */}
+      <div className="hidden md:block border border-neutral-800 overflow-hidden">
         <div className="grid grid-cols-[1fr_1.5fr_100px_180px] px-5 py-3 bg-neutral-900 border-b border-neutral-800 text-[10px] tracking-widest text-neutral-600 uppercase">
           <span>Username</span>
           <span>Email</span>
@@ -155,7 +161,9 @@ export default function UsersPage() {
               } ${i % 2 === 0 ? "bg-neutral-900" : "bg-neutral-900/60"}`}
             >
               <span className="text-sm text-neutral-200">{u.username}</span>
-              <span className="text-xs text-neutral-500">{u.email}</span>
+              <span className="text-xs text-neutral-500 truncate pr-3">
+                {u.email}
+              </span>
               <Badge banned={u.banned} />
               <div className="flex gap-2">
                 {u.banned ? (
@@ -188,8 +196,67 @@ export default function UsersPage() {
         )}
       </div>
 
+      {/* Mobile cards */}
+      <div className="md:hidden flex flex-col gap-3">
+        {loading ? (
+          <div className="px-5 py-8 text-neutral-600 text-sm border border-neutral-800">
+            LOADING…
+          </div>
+        ) : users.length === 0 ? (
+          <div className="px-5 py-8 text-neutral-600 text-sm border border-neutral-800">
+            NO USERS FOUND
+          </div>
+        ) : (
+          users.map((u) => (
+            <div
+              key={u._id}
+              className="border border-neutral-800 bg-neutral-900 p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-sm text-neutral-200 font-medium">
+                  {u.username}
+                </span>
+                <Badge banned={u.banned} />
+              </div>
+
+              <span className="text-xs text-neutral-500 truncate">
+                {u.email}
+              </span>
+
+              <div className="flex gap-2 pt-1 border-t border-neutral-800">
+                {u.banned ? (
+                  <Btn
+                    label="UNBAN"
+                    onClick={() => action(() => UnbanUser(u._id), u._id)}
+                    disabled={acting === u._id}
+                  />
+                ) : (
+                  <Btn
+                    label="BAN"
+                    onClick={() => action(() => BanUser(u._id), u._id)}
+                    disabled={acting === u._id}
+                  />
+                )}
+                <Btn
+                  label="DELETE"
+                  onClick={() => {
+                    if (
+                      confirm(`Delete "${u.username}"? This cannot be undone.`)
+                    )
+                      action(() => DeleteUser(u._id), u._id);
+                  }}
+                  danger
+                  disabled={acting === u._id}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
       {pages > 1 && (
-        <div className="flex gap-1 mt-5 justify-end">
+        <div className="flex flex-wrap gap-1 mt-5 justify-end">
           {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}

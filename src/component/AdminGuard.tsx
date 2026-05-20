@@ -14,9 +14,9 @@ export default function AdminGuard({
 
   useEffect(() => {
     adminAxios
-      .get("/api/admin/me")
+      .get("/api/Admin/me")
       .then(() => setVerified(true))
-      .catch(() => router.push("/admin/login"));
+      .catch(() => router.push("/AdminLogin"));
   }, [router]);
 
   if (!verified) return <p className="text-center mt-20">Verifying access…</p>;

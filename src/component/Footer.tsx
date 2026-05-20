@@ -1,6 +1,6 @@
 export default function Footer() {
   return (
-    <div className="w-[1298px] h-[139px] bg-[#E0FFFE] shrink-0 flex flex-row gap-[109px] items-center justify-center">
+    <div className="w-full bg-[#E0FFFE] shrink-0 flex flex-col sm:flex-row gap-6 sm:gap-[109px] items-center justify-center px-6 py-8 sm:py-0 sm:h-[139px]">
       <div className="flex flex-row gap-4 items-center">
         <svg
           width="41"
@@ -16,13 +16,14 @@ export default function Footer() {
         </svg>
         <p className="font-bold text-[18px]">BranchVerse</p>
       </div>
-      <div className="flex flex-row gap-[91px]">
+
+      <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-[91px]">
         <div className="flex flex-row gap-[21px] font-medium text-[16px]">
           <p>About</p>
           <p>Features</p>
           <p>Contact</p>
         </div>
-        <p className="font-medium text-[16px]">
+        <p className="font-medium text-[14px] sm:text-[16px] text-center sm:text-left text-gray-500 sm:text-inherit">
           BranchVerse © 2025 - Collaborative Storytelling Redefined
         </p>
       </div>

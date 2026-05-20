@@ -113,31 +113,34 @@ export default function ChaptersPage() {
   };
 
   return (
-    <div>
-      <div className="mb-10">
+    <div className="px-4 sm:px-0">
+      <div className="mb-8 sm:mb-10">
         <p className="text-xs tracking-widest text-neutral-500 mb-2 uppercase">
           Moderation
         </p>
-        <h1 className="text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           Chapters
         </h1>
       </div>
 
-      <div className="flex items-center gap-4 mb-6">
+      {/* Search bar */}
+      <div className="flex flex-wrap items-center gap-3 mb-6">
         <input
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && load(1, search)}
           placeholder="Search by title or story…"
-          className="flex-1 max-w-sm px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-200 text-sm font-mono placeholder:text-neutral-600 outline-none focus:border-neutral-500 transition-colors"
+          className="flex-1 min-w-0 px-4 py-2.5 bg-neutral-900 border border-neutral-700 text-neutral-200 text-sm font-mono placeholder:text-neutral-600 outline-none focus:border-neutral-500 transition-colors"
         />
         <button
           onClick={() => load(1, search)}
-          className="px-5 py-2.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono"
+          className="px-5 py-2.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono shrink-0"
         >
           SEARCH
         </button>
-        <span className="ml-auto text-xs text-neutral-600">{total} total</span>
+        <span className="w-full sm:w-auto sm:ml-auto text-xs text-neutral-600">
+          {total} total
+        </span>
       </div>
 
       {msg && (
@@ -146,7 +149,8 @@ export default function ChaptersPage() {
         </div>
       )}
 
-      <div className="border border-neutral-800 overflow-hidden">
+      {/* Desktop table — hidden on mobile */}
+      <div className="hidden md:block border border-neutral-800 overflow-hidden">
         <div className="grid grid-cols-[1.2fr_1fr_0.8fr_80px_90px_180px] px-5 py-3 bg-neutral-900 border-b border-neutral-800 text-[10px] tracking-widest text-neutral-600 uppercase">
           <span>Chapter Title</span>
           <span>Story</span>
@@ -214,8 +218,79 @@ export default function ChaptersPage() {
         )}
       </div>
 
+      {/* Mobile cards — hidden on desktop */}
+      <div className="md:hidden flex flex-col gap-3">
+        {loading ? (
+          <div className="px-5 py-8 text-neutral-600 text-sm border border-neutral-800">
+            LOADING…
+          </div>
+        ) : chapters.length === 0 ? (
+          <div className="px-5 py-8 text-neutral-600 text-sm border border-neutral-800">
+            NO CHAPTERS FOUND
+          </div>
+        ) : (
+          chapters.map((c) => (
+            <div
+              key={c._id}
+              className="border border-neutral-800 bg-neutral-900 p-4 flex flex-col gap-3"
+            >
+              <div className="flex items-start justify-between gap-2">
+                <span className="text-sm text-neutral-200 font-medium leading-snug">
+                  {c.title}
+                </span>
+                <div className="flex gap-1.5 shrink-0">
+                  <BranchBadge isMain={c.isMainBranch} />
+                  <Badge disabled={c.disabled} />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-0.5">
+                <span className="text-xs text-neutral-500">
+                  <span className="text-neutral-600">Story: </span>
+                  {c.storyId?.title ?? "—"}
+                </span>
+                <span className="text-xs text-neutral-500">
+                  <span className="text-neutral-600">Author: </span>
+                  {c.author.username}
+                </span>
+              </div>
+
+              <div className="flex gap-2 pt-1 border-t border-neutral-800">
+                {c.disabled ? (
+                  <Btn
+                    label="ENABLE"
+                    onClick={() =>
+                      action(() => AdminEnableChapter(c._id), c._id)
+                    }
+                    disabled={acting === c._id}
+                  />
+                ) : (
+                  <Btn
+                    label="DISABLE"
+                    onClick={() =>
+                      action(() => AdminDisableChapter(c._id), c._id)
+                    }
+                    disabled={acting === c._id}
+                  />
+                )}
+                <Btn
+                  label="DELETE"
+                  onClick={() => {
+                    if (confirm(`Delete "${c.title}"? This cannot be undone.`))
+                      action(() => AdminDeleteChapter(c._id), c._id);
+                  }}
+                  danger
+                  disabled={acting === c._id}
+                />
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Pagination */}
       {pages > 1 && (
-        <div className="flex gap-1 mt-5 justify-end">
+        <div className="flex flex-wrap gap-1 mt-5 justify-end">
           {Array.from({ length: pages }, (_, i) => i + 1).map((p) => (
             <button
               key={p}

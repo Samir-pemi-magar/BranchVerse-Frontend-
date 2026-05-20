@@ -1,3 +1,4 @@
+// StoryTitle.tsx
 "use client";
 
 import { useForm } from "react-hook-form";
@@ -32,10 +33,9 @@ export default function StoryTitle() {
 
   const addCustomGenre = () => {
     if (!customGenre.trim()) return;
-    // Merge custom genre into form data
     const currentGenres = watch("genre") || [];
     setValue("genre", [...currentGenres, customGenre.trim()]);
-    setCustomGenre(""); // reset input
+    setCustomGenre("");
   };
 
   const addTag = () => {
@@ -78,19 +78,20 @@ export default function StoryTitle() {
     <>
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="py-[50px] w-full h-auto bg-white px-[140px] flex flex-col items-center"
+        className="py-8 sm:py-[50px] w-full h-auto bg-white px-4 sm:px-8 md:px-16 lg:px-[140px] flex flex-col items-center"
       >
         <div className="flex flex-col gap-[26px] w-full">
           <p className="font-semibold text-[20px]">Story Information</p>
 
-          <div className="flex flex-row w-full h-fit gap-x-[118px]">
-            <div className="flex flex-col gap-4">
+          {/* Main layout: stacks on mobile, side-by-side on large screens */}
+          <div className="flex flex-col lg:flex-row w-full h-fit gap-y-8 lg:gap-x-[118px]">
+            <div className="flex flex-col gap-4 w-full lg:flex-1">
               {/* Story Title */}
               <section className="flex flex-col gap-[9px]">
                 <p className="font-semibold text-[15px]">Story Title</p>
                 <input
                   {...register("title", { required: true })}
-                  className="border border-[#A7A3A3]/49 rounded-[7px] w-[660px] h-12 outline-none px-2.5"
+                  className="border border-[#A7A3A3]/49 rounded-[7px] w-full h-12 outline-none px-2.5"
                   placeholder="Enter name of the story..."
                 />
               </section>
@@ -100,7 +101,7 @@ export default function StoryTitle() {
                 <p className="font-semibold text-[15px]">Short Description</p>
                 <textarea
                   {...register("description")}
-                  className="border border-[#A7A3A3]/49 rounded-[7px] w-[660px] h-[201px] outline-none px-2.5 resize-none"
+                  className="border border-[#A7A3A3]/49 rounded-[7px] w-full h-[201px] outline-none px-2.5 resize-none"
                   placeholder="Please enter a short description or leave it empty..."
                 />
               </section>
@@ -109,11 +110,11 @@ export default function StoryTitle() {
               <section className="flex flex-col gap-[9px]">
                 <p className="text-[16px] font-semibold">Tags</p>
 
-                <section className="flex flex-row gap-x-[13px] items-center">
+                <section className="flex flex-row flex-wrap gap-2 items-center">
                   {tags.map((tag, index) => (
                     <p
                       key={index}
-                      className="w-fit h-fit px-5 py-2 text-black bg-[#F6F3FC] rounded-[15px]"
+                      className="w-fit h-fit px-5 py-2 text-black bg-[#F6F3FC] rounded-[15px] text-sm"
                     >
                       #{tag}
                     </p>
@@ -131,10 +132,10 @@ export default function StoryTitle() {
                 </section>
               </section>
 
+              {/* Genre */}
               <section className="flex flex-col gap-[9px]">
                 <p className="font-semibold text-[15px]">Genre</p>
 
-                {/* Checkboxes in a row */}
                 <div className="flex flex-row gap-4 flex-wrap">
                   {["Fantasy", "Romance", "Sci-Fi", "Horror", "Mystery"].map(
                     (g) => (
@@ -150,7 +151,6 @@ export default function StoryTitle() {
                   )}
                 </div>
 
-                {/* Custom genre input below checkboxes */}
                 <div className="flex flex-col gap-1 mt-2">
                   <p className="text-[14px] font-medium">Other Genre</p>
                   <input
@@ -164,17 +164,16 @@ export default function StoryTitle() {
                         addCustomGenre();
                       }
                     }}
-                    className="border border-[#A7A3A3]/49 rounded-[7px] h-10 px-2.5"
+                    className="border border-[#A7A3A3]/49 rounded-[7px] h-10 px-2.5 w-full sm:w-auto"
                   />
                 </div>
               </section>
             </div>
 
             {/* Cover */}
-            <div className="flex flex-col gap-[9px]">
+            <div className="flex flex-col gap-[9px] w-full lg:w-auto">
               <p className="text-[15px] font-semibold">Story Cover</p>
 
-              {/* Hidden file input reference */}
               <input
                 type="file"
                 accept="image/*"
@@ -183,23 +182,22 @@ export default function StoryTitle() {
                 id="coverInput"
               />
 
-              {/* Preview image */}
               {watch("cover") && watch("cover").length > 0 ? (
                 <img
                   src={URL.createObjectURL(watch("cover")[0])}
                   alt="Cover Preview"
-                  className="w-[620px] h-[301px] object-cover rounded-[7px] border border-[#A7A3A3]/50 cursor-pointer"
+                  className="w-full lg:w-[620px] h-[220px] sm:h-[301px] object-cover rounded-[7px] border border-[#A7A3A3]/50 cursor-pointer"
                   onClick={() => {
                     const fileInput = document.getElementById(
                       "coverInput",
                     ) as HTMLInputElement;
-                    fileInput.click(); // Open file selector on click
+                    fileInput.click();
                   }}
                 />
               ) : (
                 <label
                   htmlFor="coverInput"
-                  className="flex items-center justify-center w-[620px] h-[301px] border border-[#A7A3A3]/50 rounded-[7px] cursor-pointer text-gray-400"
+                  className="flex items-center justify-center w-full lg:w-[620px] h-[220px] sm:h-[301px] border border-[#A7A3A3]/50 rounded-[7px] cursor-pointer text-gray-400 text-sm"
                 >
                   Click to select cover image
                 </label>
@@ -209,7 +207,7 @@ export default function StoryTitle() {
         </div>
 
         {/* Branch */}
-        <div className="w-full h-auto flex flex-col gap-6 mt-12 p-6 bg-[#F9F7FD] rounded-xl shadow-sm">
+        <div className="w-full h-auto flex flex-col gap-6 mt-12 p-4 sm:p-6 bg-[#F9F7FD] rounded-xl shadow-sm">
           <p className="font-bold text-xl text-[#4B3E8B]">Branching Option</p>
 
           <div className="flex flex-col gap-4">
@@ -220,7 +218,7 @@ export default function StoryTitle() {
             <section className="flex flex-col gap-2">
               <p className="text-sm font-medium text-gray-600">Parent Story</p>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-4 py-2 bg-[#9E77DC] rounded-full text-white font-semibold text-sm">
                   Origin
                 </span>
@@ -246,8 +244,8 @@ export default function StoryTitle() {
 
       {/* Confirmation Modal */}
       {showConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl w-[420px] p-6 shadow-xl flex flex-col gap-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white rounded-xl w-full max-w-[420px] p-6 shadow-xl flex flex-col gap-4">
             <h2 className="text-[18px] font-semibold text-center">
               Branching Option
             </h2>

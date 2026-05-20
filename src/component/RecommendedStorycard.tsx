@@ -2,6 +2,8 @@ import Link from "next/link";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DisableStory, DeleteStory } from "../Services/storyApi";
+import ReportModal from "./Reportmodal";
+import { FaEye } from "react-icons/fa";
 
 interface Author {
   _id: string;
@@ -38,6 +40,7 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
   onDisable,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const router = useRouter();
 
   const isAuthor =
@@ -79,28 +82,35 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
   };
 
   return (
-    <Link
-      key={story._id}
-      href={`/Users/StoryPreview?id=${story._id}`}
-      className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition cursor-pointer overflow-hidden flex flex-col"
-    >
-      {/* Cover image with branchable badge + author menu */}
-      <div className="relative h-[220px] rounded-lg overflow-hidden">
-        <img
-          src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-          alt={story.title}
-          className="w-full h-full object-cover"
+    <>
+      {reportOpen && (
+        <ReportModal
+          storyId={story._id}
+          storyTitle={story.title}
+          onClose={() => setReportOpen(false)}
         />
+      )}
 
-        {/* Branchable Badge */}
-        {story.branchAllowed && (
-          <div className="absolute top-3 left-3 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold z-20">
-            Branchable
-          </div>
-        )}
+      <Link
+        key={story._id}
+        href={`/Users/StoryPreview?id=${story._id}`}
+        className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition cursor-pointer overflow-hidden flex flex-col"
+      >
+        {/* Cover image */}
+        <div className="relative h-[180px] sm:h-[220px] rounded-lg overflow-hidden">
+          <img
+            src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+            alt={story.title}
+            className="w-full h-full object-cover"
+          />
 
-        {/* Author Menu */}
-        {isAuthor && (
+          {story.branchAllowed && (
+            <div className="absolute top-3 left-3 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold z-20">
+              Branchable
+            </div>
+          )}
+
+          {/* ⋮ menu — always visible */}
           <div className="absolute top-3 right-3 z-30">
             <button
               onClick={(e) => {
@@ -121,98 +131,100 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
                   e.stopPropagation();
                 }}
               >
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  onClick={(e) => {
+                {isAuthor ? (
+                  <>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        router.push(`/Users/EditStory?id=${story._id}`);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={handleDisable}
+                    >
+                      Disable
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      onClick={handleDelete}
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      setReportOpen(true);
+                    }}
+                  >
+                    🚩 Report
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Story info */}
+        <div className="mt-3 flex-1 flex flex-col">
+          <p className="text-[18px] sm:text-[20px] font-bold text-gray-900 line-clamp-2">
+            {story.title}
+          </p>
+          <p className="text-sm text-gray-600 mt-1">
+            By {story.author.username}
+          </p>
+
+          <div className="mt-3 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <FaEye />
+                <span>{story.views}</span>
+              </div>
+
+              {handleLikeStory && (
+                <div
+                  className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
+                    liked ? "text-red-500" : "text-gray-400"
+                  }`}
+                  onClick={async (e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    router.push(`/Users/EditStory?id=${story._id}`);
+                    setLiked((prev) => !prev);
+                    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+                    await handleLikeStory(story._id);
                   }}
                 >
-                  Edit
-                </button>
-
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  onClick={handleDisable}
-                >
-                  Disable
-                </button>
-
-                <button
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                  onClick={handleDelete}
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-      </div>
-
-      {/* Story info */}
-      <div className="mt-3 flex-1 flex flex-col">
-        <p className="text-[20px] font-bold text-gray-900 line-clamp-2">
-          {story.title}
-        </p>
-        <p className="text-sm text-gray-600 mt-1">By {story.author.username}</p>
-
-        {/* Likes, views, branches */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 10l4.553-2.276A2 2 0 0122 9.618V16a2 2 0 01-2 2h-4"
-                />
-              </svg>
-              <span>{story.views}</span>
+                  {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
+                </div>
+              )}
             </div>
 
-            {handleLikeStory && (
-              <div
-                className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
-                  liked ? "text-red-500" : "text-gray-400"
-                }`}
-                onClick={async (e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setLiked((prev) => !prev);
-                  setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-                  await handleLikeStory(story._id);
-                }}
-              >
-                {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
+            <div className="flex items-center gap-1 text-xs text-gray-500 flex-wrap">
+              <span>{story.branchesCount} Branches</span>
+              <div className="flex gap-1 flex-wrap">
+                {story.tags.slice(0, 3).map((t: string, i: number) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
+                  >
+                    {t}
+                  </span>
+                ))}
               </div>
-            )}
-          </div>
-
-          <div className="flex items-center gap-1 text-xs text-gray-500">
-            <span>{story.branchesCount} Branches</span>
-            <div className="flex gap-1">
-              {story.tags.slice(0, 3).map((t: string, i: number) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
-                >
-                  {t}
-                </span>
-              ))}
             </div>
           </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+    </>
   );
 };
 

@@ -9,7 +9,6 @@ export default function UserLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-
   const isStoryReader = pathname?.startsWith("/Users/StoryReader");
 
   if (isStoryReader) {
@@ -22,7 +21,7 @@ export default function UserLayout({
   }
 
   return (
-    <div className="min-h-screen flex flex-col items-center">
+    <div className="min-h-screen flex flex-col">
       <Navbar />
       <div className="flex-1 w-full">{children}</div>
       <Footer />

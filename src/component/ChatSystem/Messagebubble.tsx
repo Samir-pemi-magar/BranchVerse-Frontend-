@@ -1,4 +1,4 @@
-interface Message {
+export interface Message {
   _id: string;
   content: string;
   sender: { _id: string; username: string };
@@ -9,7 +9,7 @@ interface Message {
 interface Props {
   message: Message;
   isOwn: boolean;
-  showSender: boolean; // show sender name in group chats
+  showSender: boolean;
   onDelete?: (id: string) => void;
 }
 
@@ -31,21 +31,21 @@ export default function MessageBubble({
       className={`flex ${isOwn ? "justify-end" : "justify-start"} group mb-1`}
     >
       <div
-        className={`max-w-[70%] ${isOwn ? "items-end" : "items-start"} flex flex-col`}
+        className={`max-w-[85%] sm:max-w-[70%] ${isOwn ? "items-end" : "items-start"} flex flex-col`}
       >
-        {/* Sender name (group chats only, not own messages) */}
+        {/* Sender name (group chats only) */}
         {showSender && !isOwn && (
           <span className="text-xs text-gray-400 mb-1 ml-1">
             {message.sender.username}
           </span>
         )}
 
-        <div className="flex items-end gap-2">
-          {/* Delete button (own messages only) */}
+        <div className="flex items-end gap-1 sm:gap-2">
+          {/* Delete button */}
           {isOwn && onDelete && !message.isDeleted && (
             <button
               onClick={() => onDelete(message._id)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-red-400 text-xs mb-1"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400 text-xs mb-1 flex-shrink-0"
               title="Delete"
             >
               ✕
@@ -54,14 +54,14 @@ export default function MessageBubble({
 
           {/* Bubble */}
           <div
-            className={`px-4 py-2 rounded-2xl text-sm leading-relaxed
-              ${
-                isOwn
-                  ? "bg-white text-black rounded-br-sm"
-                  : "bg-gray-100 text-black rounded-bl-sm"
-              }
-              ${message.isDeleted ? "italic opacity-40" : ""}
-            `}
+            className={`px-3 sm:px-4 py-2 rounded-2xl text-sm leading-relaxed break-words
+    ${
+      isOwn
+        ? "bg-[#FDDBB4] text-black rounded-br-sm" // 👈 warm skin/peach color
+        : "bg-gray-100 text-black rounded-bl-sm"
+    }
+    ${message.isDeleted ? "italic opacity-40" : ""}
+  `}
           >
             {message.content}
           </div>
@@ -75,5 +75,3 @@ export default function MessageBubble({
     </div>
   );
 }
-
-export type { Message };

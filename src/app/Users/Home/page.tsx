@@ -1,6 +1,7 @@
 "use client";
 import { getPreferences } from "@/src/Services/authapi";
 import { GetPopularThisWeek } from "@/src/Services/storyApi";
+import { FaEye } from "react-icons/fa";
 import {
   GetAllStories,
   GetTrendingStories,
@@ -98,7 +99,7 @@ export default function Home() {
     };
     const fetchBookmarks = async () => {
       try {
-        const data = await GetAllBookmarks(); // { stories: [], chapters: [] }
+        const data = await GetAllBookmarks();
         setBookmarkedStories(data.stories || []);
       } catch (err) {
         console.error("Failed to fetch bookmarks", err);
@@ -127,14 +128,10 @@ export default function Home() {
     fetchTopWriters();
     fetchTopStories();
     fetchBookmarks();
-
     fetchPopular();
     fetchAllStories();
   }, []);
 
-  // =====================
-  // Fetch user preferences
-  // =====================
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -146,29 +143,21 @@ export default function Home() {
         console.error("Failed to fetch preferences", err);
       }
     };
-
     fetchPreferences();
   }, []);
 
-  // =====================
-  // Fetch trending stories
-  // =====================
   useEffect(() => {
     const fetchTrending = async () => {
       try {
         const data = await GetTrendingStories();
-        setTrendingStories(data.slice(0, 5)); // top 5
+        setTrendingStories(data.slice(0, 5));
       } catch (err) {
         console.error("Failed to fetch trending stories", err);
       }
     };
-
     fetchTrending();
   }, []);
 
-  // =====================
-  // Fetch recommended / personalized stories
-  // =====================
   useEffect(() => {
     const fetchRecommended = async () => {
       try {
@@ -194,35 +183,28 @@ export default function Home() {
     }
   }, [preferences]);
 
-  // =====================
-  // Trending carousel interval
-  // =====================
   useEffect(() => {
     if (trendingStories.length === 0) return;
-
     const interval = setInterval(() => {
       setCurrentTrendingIndex((prev) => (prev + 1) % trendingStories.length);
     }, 3000);
-
     return () => clearInterval(interval);
   }, [trendingStories]);
 
   const handleLikeStory = async (id: string) => {
-    const res = await LikeStory(id); // { likes: number }
-
+    const res = await LikeStory(id);
     setStories((prev) =>
       prev.map((story) =>
         story._id === id ? { ...story, likes: res.likes } : story,
       ),
     );
   };
-  // auto-scroll effect
+
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || stories.length === 0) return;
-
     const interval = setInterval(() => {
-      if (isHovered) return; // pause on hover
+      if (isHovered) return;
       const maxScrollLeft = scroller.scrollWidth - scroller.clientWidth;
       if (Math.ceil(scroller.scrollLeft) >= maxScrollLeft) {
         scroller.scrollTo({ left: 0, behavior: "smooth" });
@@ -230,19 +212,19 @@ export default function Home() {
         scroller.scrollBy({ left: scroller.clientWidth, behavior: "smooth" });
       }
     }, 3500);
-
     return () => clearInterval(interval);
   }, [stories, isHovered]);
 
   return (
-    <div className="py-[90px] w-full h-auto bg-white px-[90px] flex flex-col items-center">
-      <div className="flex flex-row justify-between w-full px-20 items-center">
-        <div className="flex flex-col gap-[75px]">
-          <div className="flex flex-col gap-[30px]">
-            <p className="w-[461px] text-[60px] leading-[60px] tracking-[-1px] wrap-normal font-bold">
+    <div className="pt-[90px] w-full h-auto bg-white px-4 sm:px-8 lg:px-[90px] flex flex-col items-center">
+      {/* ── Hero Section ── */}
+      <div className="flex flex-col lg:flex-row justify-between w-full lg:px-20 items-center gap-10">
+        <div className="flex flex-col gap-8 lg:gap-[75px]">
+          <div className="flex flex-col gap-4 lg:gap-[30px]">
+            <p className="w-full lg:w-[461px] text-[36px] sm:text-[48px] lg:text-[60px] leading-tight lg:leading-[60px] tracking-[-1px] font-bold">
               Welcome to BranchVerse
             </p>
-            <p className="w-[478px] leading-7 wrap-normal font-bold text-[20px] text-[#837E7E]">
+            <p className="w-full lg:w-[478px] leading-7 font-bold text-[16px] sm:text-[18px] lg:text-[20px] text-[#837E7E]">
               Continue your narrative journey, explore new worlds, and connect
               with a vibrant community of storytellers.
             </p>
@@ -262,7 +244,9 @@ export default function Home() {
             </button>
           </div>
         </div>
-        <div className="w-[550px] overflow-hidden">
+
+        {/* Story Carousel */}
+        <div className="w-full lg:w-[550px] overflow-hidden">
           <div
             ref={scrollerRef}
             onMouseEnter={() => setIsHovered(true)}
@@ -279,28 +263,21 @@ export default function Home() {
                 <Link
                   key={story._id}
                   href={`/Users/StoryPreview?id=${story._id}`}
-                  className="relative flex-shrink-0 w-full h-[300px] rounded-2xl overflow-hidden snap-center cursor-pointer group shadow-md hover:shadow-lg transition-shadow duration-300"
+                  className="relative flex-shrink-0 w-full h-[260px] sm:h-[300px] rounded-2xl overflow-hidden snap-center cursor-pointer group shadow-md hover:shadow-lg transition-shadow duration-300"
                 >
-                  {/* Cover image */}
                   <img
                     src={coverSrc}
                     alt={story.title}
                     className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105 group-hover:brightness-110"
                   />
-
-                  {/* Gradient overlay */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
-
-                  {/* Branchable badge */}
                   {story.branchAllowed && (
                     <div className="absolute top-3 left-3 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold z-10">
                       Branchable
                     </div>
                   )}
-
-                  {/* Story title & author */}
                   <div className="absolute bottom-4 left-4 z-10">
-                    <p className="text-white font-bold text-[20px] sm:text-[22px] md:text-[24px] line-clamp-2 max-w-[90%]">
+                    <p className="text-white font-bold text-[18px] sm:text-[22px] md:text-[24px] line-clamp-2 max-w-[90%]">
                       {story.title}
                     </p>
                     <p className="text-gray-200 text-xs mt-1">
@@ -313,66 +290,62 @@ export default function Home() {
           </div>
         </div>
       </div>
-      <div className="w-full h-fit py-[50px] items-center flex flex-col gap-[60px] bg-[#FAFAFB] mt-[110px]">
-        <p className="font-bold text-[36px]">Recommended Stories</p>
-        <div
-          className="grid grid-cols-3 gap-6 w-full"
-          style={{ paddingLeft: "62px", paddingRight: "62px" }}
-        >
+
+      {/* ── Recommended Stories ── */}
+      <div className="w-full h-fit py-[50px] items-center flex flex-col gap-[40px] lg:gap-[60px] bg-[#FAFAFB] mt-[60px] lg:mt-[110px]">
+        <p className="font-bold text-[28px] sm:text-[36px]">
+          Recommended Stories
+        </p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 w-full px-4 sm:px-8 lg:px-[62px]">
           {recommendedStories.map((story) => (
             <RecommendedStorycard
               key={story._id}
               story={story}
-              handleLikeStory={handleLikeStory} // optional
+              handleLikeStory={handleLikeStory}
               currentUserId={currentUserId}
             />
           ))}
         </div>
       </div>
-      <div className="w-full h-fit py-[50px] items-center flex flex-col gap-[60px] mt-[90px]">
-        <p className="font-bold text-[36px]">Trending Now</p>
-        <div className="px-[60px] flex flex-row justify-between w-full">
+
+      {/* ── Trending Now ── */}
+      <div className="w-full h-fit py-[50px] items-center flex flex-col gap-[40px] lg:gap-[60px] mt-[60px] lg:mt-[90px]">
+        <p className="font-bold text-[28px] sm:text-[36px]">Trending Now</p>
+        <div className="px-4 sm:px-8 lg:px-[60px] flex flex-col lg:flex-row justify-between w-full gap-8">
+          {/* Trending Featured Card */}
           {trendingStories.length > 0 &&
             (() => {
               const story = trendingStories[currentTrendingIndex];
-
               return (
                 <div
                   key={story._id}
-                  className="flex-shrink-0 rounded-2xl w-1/2 h-fit overflow-hidden shadow-md transition-all duration-500 bg-white"
+                  className="rounded-2xl w-full lg:w-1/2 h-fit overflow-hidden shadow-md transition-all duration-500 bg-white"
                 >
-                  {/* IMAGE + BRANCHABLE BADGE */}
                   <div className="relative w-full">
                     {story.branchAllowed && (
                       <span className="absolute top-3 left-3 bg-[#00B8AE] text-white text-sm font-semibold px-3 py-1 rounded-md shadow">
                         Branchable
                       </span>
                     )}
-
                     <img
                       src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
                       alt={story.title}
-                      className="w-full h-[250px] object-cover rounded-t-2xl"
+                      className="w-full h-[200px] sm:h-[250px] object-cover rounded-t-2xl"
                     />
                   </div>
-
-                  {/* CONTENT */}
                   <div className="flex flex-col justify-between items-start px-3 py-5 gap-3">
-                    {/* TITLE + AUTHOR */}
                     <div>
-                      <p className="font-bold text-[30px]">{story.title}</p>
-                      <div className="flex flex-row gap-1 text-[17px] font-bold text-[#837E7E]">
+                      <p className="font-bold text-[22px] sm:text-[28px] lg:text-[30px]">
+                        {story.title}
+                      </p>
+                      <div className="flex flex-row gap-1 text-[15px] sm:text-[17px] font-bold text-[#837E7E]">
                         <p>By</p>
                         <p>{story.author.username}</p>
                       </div>
                     </div>
-
-                    {/* DESCRIPTION */}
-                    <p className="text-gray-600 text-[15px] line-clamp-2">
+                    <p className="text-gray-600 text-[14px] sm:text-[15px] line-clamp-2">
                       {story.description}
                     </p>
-
-                    {/* TAGS */}
                     <div className="flex flex-wrap gap-2 mt-2">
                       {story.tags.slice(0, 4).map((tag, idx) => (
                         <span
@@ -383,34 +356,16 @@ export default function Home() {
                         </span>
                       ))}
                     </div>
-
-                    {/* STATS */}
                     <div className="flex flex-row items-center gap-6 font-bold mt-1">
-                      {/* Views */}
                       <div className="flex gap-1 items-center text-gray-500">
-                        <svg
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                          fill="currentColor"
-                        >
-                          <path
-                            d="M12 5c-7.633 0-10 7-10 7s2.367 
-            7 10 7 10-7 10-7-2.367-7-10-7zm0 
-            12c-2.761 0-5-2.239-5-5s2.239-5 
-            5-5 5 2.239 5 5-2.239 5-5 
-            5zm0-8a3 3 0 100 6 3 3 0 000-6z"
-                          />
-                        </svg>
-                        <p className="text-[17px]">{story.views}</p>
+                        <FaEye />
+                        <p className="text-[15px] sm:text-[17px]">
+                          {story.views}
+                        </p>
                       </div>
-
-                      {/* Likes */}
                       <div
-                        className="flex gap-1 items-center text-red-500"
-                        onClick={() => {
-                          handleLikeStory(story._id);
-                        }}
+                        className="flex gap-1 items-center text-red-500 cursor-pointer"
+                        onClick={() => handleLikeStory(story._id)}
                       >
                         <svg
                           width="18"
@@ -418,18 +373,12 @@ export default function Home() {
                           viewBox="0 0 24 24"
                           fill="currentColor"
                         >
-                          <path
-                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 
-            4.42 3 7.5 3c1.74 0 3.41.81 
-            4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 
-            22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 
-            11.54L12 21.35z"
-                          />
+                          <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                         </svg>
-                        <p className="text-[17px]">{story.likes}</p>
+                        <p className="text-[15px] sm:text-[17px]">
+                          {story.likes}
+                        </p>
                       </div>
-
-                      {/* Branches */}
                       <div className="flex gap-1 items-center text-[#00B8AE]">
                         <svg
                           width="16"
@@ -442,7 +391,9 @@ export default function Home() {
                             fill="#00B8AE"
                           />
                         </svg>
-                        <p className="text-[17px]">{story.branchesCount}</p>
+                        <p className="text-[15px] sm:text-[17px]">
+                          {story.branchesCount}
+                        </p>
                       </div>
                     </div>
                   </div>
@@ -450,35 +401,39 @@ export default function Home() {
               );
             })()}
 
-          <div className="border border-black/12 w-[569px] h-fit rounded-2xl px-5 py-7">
-            <p className="font-bold text-[24px] mb-5">Popular this Week</p>
+          {/* Popular This Week */}
+          <div className="border border-black/12 w-full lg:w-[569px] h-fit rounded-2xl px-5 py-7">
+            <p className="font-bold text-[22px] sm:text-[24px] mb-5">
+              Popular this Week
+            </p>
             <div className="flex flex-col gap-4">
               {popularStories.map((story) => (
                 <div
                   key={story._id}
                   className="flex flex-row items-center gap-3"
                 >
-                  {/* Cover Image */}
                   <img
                     src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
                     alt={story.title}
-                    className="w-20 h-28 object-cover rounded-md"
+                    className="w-16 h-24 sm:w-20 sm:h-28 object-cover rounded-md flex-shrink-0"
                   />
-
-                  {/* Info */}
                   <div className="flex flex-col">
-                    <p className="font-bold text-[18px]">{story.title}</p>
-                    <p className="text-gray-500 text-[14px]">
+                    <p className="font-bold text-[15px] sm:text-[18px]">
+                      {story.title}
+                    </p>
+                    <p className="text-gray-500 text-[13px] sm:text-[14px]">
                       by {story.author.username}
                     </p>
-                    <div className="flex flex-row gap-2 mt-1 items-center">
-                      <p className="text-[#00B8AE] font-semibold">
+                    <div className="flex flex-row flex-wrap gap-2 mt-1 items-center">
+                      <p className="text-[#00B8AE] font-semibold text-sm">
                         {story.branchesCount} Branches
                       </p>
-                      <p className="text-red-500 font-semibold">
+                      <p className="text-red-500 font-semibold text-sm">
                         {story.likes} Likes
                       </p>
-                      <p className="text-gray-500">{story.views} Views</p>
+                      <p className="text-gray-500 text-sm">
+                        {story.views} Views
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -487,14 +442,12 @@ export default function Home() {
           </div>
         </div>
       </div>
-      {/* Bookmarks Section */}
+
+      {/* ── Bookmarks ── */}
       {!loading && bookmarkedStories.length > 0 && (
-        <div className="flex flex-col gap-[60px] mt-[90px] w-full items-center py-[50px] h-fit bg-[#FAFAFB]">
-          <p className="font-bold text-[36px]">Bookmarks</p>
-          <div
-            className="grid grid-cols-3 gap-3 w-full"
-            style={{ paddingLeft: "62px", paddingRight: "62px" }}
-          >
+        <div className="flex flex-col gap-[40px] lg:gap-[60px] mt-[60px] lg:mt-[90px] w-full items-center py-[50px] h-fit bg-[#FAFAFB]">
+          <p className="font-bold text-[28px] sm:text-[36px]">Bookmarks</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 w-full px-4 sm:px-8 lg:px-[62px]">
             {bookmarkedStories.map((story) => (
               <div
                 key={story._id}
@@ -503,25 +456,20 @@ export default function Home() {
                   router.push(`/Users/StoryPreview?id=${story._id}`)
                 }
               >
-                {/* Cover Image */}
-                <div className="w-full h-[200px] rounded-xl overflow-hidden bg-gray-100">
+                <div className="w-full h-[180px] sm:h-[200px] rounded-xl overflow-hidden bg-gray-100">
                   <img
                     src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
                     alt={story.title}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
                 </div>
-
-                {/* Info */}
                 <div>
-                  <div>
-                    <p className="font-bold text-[25px] line-clamp-1">
-                      {story.title}
-                    </p>
-                    <div className="flex flex-row gap-0.5 text-[14px] font-bold text-[#837E7E]">
-                      <p>By</p>
-                      <p>{story.author.username}</p>
-                    </div>
+                  <p className="font-bold text-[20px] sm:text-[25px] line-clamp-1">
+                    {story.title}
+                  </p>
+                  <div className="flex flex-row gap-0.5 text-[13px] sm:text-[14px] font-bold text-[#837E7E]">
+                    <p>By</p>
+                    <p>{story.author.username}</p>
                   </div>
                   <div className="flex flex-row gap-0.5 items-center text-[#00B8AE] mt-1">
                     <svg
@@ -536,7 +484,7 @@ export default function Home() {
                         fill="#00B8AE"
                       />
                     </svg>
-                    <p className="text-[14px] font-bold">
+                    <p className="text-[13px] sm:text-[14px] font-bold">
                       {story.branchesCount ?? 0} Branches
                     </p>
                   </div>
@@ -546,19 +494,16 @@ export default function Home() {
           </div>
         </div>
       )}
-      <div
-        className="flex flex-col gap-[60px] mt-[90px] w-full items-center h-fit bg-[#FAFAFB]"
-        style={{
-          paddingRight: "57px",
-          paddingLeft: "120px",
-          paddingTop: "50px",
-          paddingBottom: "50px",
-        }}
-      >
-        <p className="font-bold text-[36px]">Community Highlights</p>
-        <div className="flex flex-row w-full gap-x-40">
-          <div className="flex flex-row space-x-12 w-full justify-between">
-            <div className="px-10 py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white">
+
+      {/* ── Community Highlights ── */}
+      <div className="flex flex-col gap-[40px] lg:gap-[60px] mt-[60px] lg:mt-[90px] w-full items-center h-fit bg-[#FAFAFB] px-4 sm:px-8 lg:px-[57px] py-[50px]">
+        <p className="font-bold text-[28px] sm:text-[36px]">
+          Community Highlights
+        </p>
+        <div className="flex flex-col xl:flex-row w-full gap-10 xl:gap-x-50">
+          {/* Stats boxes */}
+          <div className="flex flex-row flex-wrap sm:flex-nowrap gap-4 sm:gap-6 sm:space-x-0 w-full xl:w-auto justify-center sm:justify-between">
+            <div className="px-6 sm:px-10 py-10 sm:py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white flex-1 min-w-[100px]">
               <svg
                 width="33"
                 height="33"
@@ -572,10 +517,10 @@ export default function Home() {
                 />
               </svg>
               <p>50K+</p>
-              <p>Engaged </p>
+              <p>Engaged</p>
               <p>Members</p>
             </div>
-            <div className="px-10 py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white">
+            <div className="px-6 sm:px-10 py-10 sm:py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white flex-1 min-w-[100px]">
               <svg
                 width="32"
                 height="32"
@@ -588,12 +533,11 @@ export default function Home() {
                   fill="#00B8AE"
                 />
               </svg>
-
               <p>50K+</p>
-              <p>Engaged </p>
+              <p>Engaged</p>
               <p>Members</p>
             </div>
-            <div className="px-10 py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white">
+            <div className="px-6 sm:px-10 py-10 sm:py-[220px] border border-[#F3F3F3] rounded-sm flex flex-col items-center justify-center bg-white flex-1 min-w-[100px]">
               <svg
                 width="28"
                 height="28"
@@ -607,25 +551,18 @@ export default function Home() {
                 />
               </svg>
               <p>50K+</p>
-              <p>Engaged </p>
+              <p>Engaged</p>
               <p>Members</p>
             </div>
           </div>
-          <div className="flex flex-col gap-4">
+
+          {/* Top Writers + Top Stories */}
+          <div className="flex flex-col gap-4 w-full xl:w-[680px]">
             {/* Top Writers */}
-            <div
-              className="flex flex-col px-2 py-2 bg-white border rounded-sm gap-[26px]"
-              style={{
-                width: "592px",
-                height: "282px",
-                borderColor: "#F3F3F3",
-                paddingRight: "20px",
-                paddingLeft: "42px",
-                paddingTop: "32px",
-                paddingBottom: "32px",
-              }}
-            >
-              <p className="text-[24px] font-semibold">Top Writers</p>
+            <div className="flex flex-col bg-white border border-[#F3F3F3] rounded-sm gap-[26px] px-6 sm:px-[42px] py-8 w-full">
+              <p className="text-[22px] sm:text-[24px] font-semibold">
+                Top Writers
+              </p>
               <div className="flex flex-col gap-4 w-full">
                 {topWriters.map((w, i) => (
                   <div
@@ -633,7 +570,6 @@ export default function Home() {
                     className="flex flex-row justify-between w-full items-center"
                   >
                     <div className="flex flex-row space-x-3 items-center">
-                      {/* ✅ Real profile picture or initial fallback */}
                       {w.profilePicture ? (
                         <img
                           src={w.profilePicture}
@@ -645,54 +581,43 @@ export default function Home() {
                           {w.writer.charAt(0).toUpperCase()}
                         </div>
                       )}
-
                       <div className="flex flex-col gap-0.5">
-                        <p className="font-bold text-[16px]">{w.writer}</p>
-                        <div className="flex flex-row gap-0.5 text-[14px] font-bold text-[#837E7E]">
+                        <p className="font-bold text-[15px] sm:text-[16px]">
+                          {w.writer}
+                        </p>
+                        <div className="flex flex-row gap-0.5 text-[13px] sm:text-[14px] font-bold text-[#837E7E]">
                           <p>{w.storiesCount}</p>
                           <p>{w.storiesCount === 1 ? "Story" : "Stories"}</p>
                         </div>
                       </div>
                     </div>
-                    {/* Your own icon goes here */}
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Top Stories */}
-            <div
-              className="flex flex-col px-2 py-2 bg-white border rounded-sm gap-[26px]"
-              style={{
-                width: "592px",
-                height: "282px",
-                borderColor: "#F3F3F3",
-                paddingRight: "20px",
-                paddingLeft: "42px",
-                paddingTop: "32px",
-                paddingBottom: "32px",
-              }}
-            >
-              <p className="text-[24px] font-semibold">Top Stories</p>
+            <div className="flex flex-col bg-white border border-[#F3F3F3] rounded-sm gap-[26px] px-6 sm:px-[42px] py-8 w-full">
+              <p className="text-[22px] sm:text-[24px] font-semibold">
+                Top Stories
+              </p>
               <div className="flex flex-col gap-4 w-full">
-                {topStories.map((story, i) => (
+                {topStories.map((story) => (
                   <div
                     key={story._id}
-                    className="flex flex-row gap-5 w-full cursor-pointer"
+                    className="flex flex-row gap-4 sm:gap-5 w-full cursor-pointer"
                     onClick={() =>
                       router.push(`/Users/StoryPreview?id=${story._id}`)
                     }
                   >
-                    {/* Cover image */}
                     <img
                       src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
                       alt={story.title}
                       className="w-12 h-16 object-cover rounded-md flex-shrink-0"
                     />
-
                     <div className="flex flex-row justify-between w-full items-center">
                       <section className="flex flex-col gap-1">
-                        <p className="font-bold text-[16px] line-clamp-1">
+                        <p className="font-bold text-[15px] sm:text-[16px] line-clamp-1">
                           {story.title}
                         </p>
                         <p className="font-regular text-[10px]">
@@ -702,7 +627,6 @@ export default function Home() {
                           {story.branchesCount ?? 0} Branches
                         </p>
                       </section>
-                      {/* Your own icon goes here */}
                     </div>
                   </div>
                 ))}

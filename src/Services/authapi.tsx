@@ -67,6 +67,13 @@ export const resetPassword = async (token: string, password: string) => {
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
 export const getMyConversations = async () => {
+  const token = localStorage.getItem("token");
+  console.log("Token being sent:", token);
+  console.log(
+    "Token payload:",
+    token ? JSON.parse(atob(token.split(".")[1])) : null,
+  );
+
   const response = await axiosInstance.get("/api/chat");
   return response.data;
 };

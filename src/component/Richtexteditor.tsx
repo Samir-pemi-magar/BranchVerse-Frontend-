@@ -1,3 +1,4 @@
+// RichTextEditor.tsx
 "use client";
 
 import { EditorContent, useEditor } from "@tiptap/react";
@@ -29,19 +30,19 @@ export default function RichTextEditor({
     editorProps: {
       attributes: {
         class:
-          "min-h-[460px] bg-slate-50 border rounded-md py-4 px-4 text-base leading-7",
+          "min-h-[300px] sm:min-h-[460px] bg-slate-50 border rounded-md py-3 px-3 sm:py-4 sm:px-4 text-sm sm:text-base leading-7 w-full focus:outline-none",
       },
     },
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
-    immediatelyRender: false, // ✅ Fix SSR hydration error
+    immediatelyRender: false,
   });
 
   return (
-    <div>
+    <div className="w-full">
       <MenuBar editor={editor} />
-      <EditorContent editor={editor} />
+      <EditorContent editor={editor} className="w-full" />
     </div>
   );
 }

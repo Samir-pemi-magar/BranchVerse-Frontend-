@@ -30,6 +30,7 @@ export default function ChatPage() {
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true); // mobile: show list or chat
 
   useEffect(() => {
     attachToken();
@@ -71,12 +72,24 @@ export default function ChatPage() {
     });
     setSelected(conv);
     setShowModal(false);
+    setShowSidebar(false); // on mobile, go straight to chat
+  };
+
+  const handleSelect = (conv: Conversation) => {
+    setSelected(conv);
+    setShowSidebar(false); // on mobile, switch to chat view
   };
 
   return (
     <div className="flex h-screen bg-gray-50 text-gray-900 font-['DM_Sans',sans-serif] overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-80 min-w-[280px] flex flex-col border-r border-gray-200 bg-white">
+      {/* Sidebar — always visible on md+, toggled on mobile */}
+      <aside
+        className={`
+          flex flex-col border-r border-gray-200 bg-white
+          w-full md:w-80 md:min-w-[280px] md:flex-shrink-0
+          ${showSidebar ? "flex" : "hidden"} md:flex
+        `}
+      >
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
           <h1 className="text-lg font-semibold tracking-tight text-gray-900">
@@ -112,14 +125,29 @@ export default function ChatPage() {
             <ConversationList
               conversations={conversations}
               selected={selected}
-              onSelect={setSelected}
+              onSelect={handleSelect}
             />
           )}
         </div>
       </aside>
 
-      {/* Main chat area */}
-      <main className="flex-1 flex flex-col bg-white">
+      {/* Main chat area — always visible on md+, toggled on mobile */}
+      <main
+        className={`
+          flex-1 flex flex-col bg-white min-w-0
+          ${!showSidebar ? "flex" : "hidden"} md:flex
+        `}
+      >
+        {/* Mobile back button */}
+        <div className="md:hidden flex items-center px-4 py-2 border-b border-gray-200 bg-white">
+          <button
+            onClick={() => setShowSidebar(true)}
+            className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
+          >
+            ← Back
+          </button>
+        </div>
+
         {selected ? (
           <ChatWindow
             conversation={selected}
@@ -128,7 +156,7 @@ export default function ChatPage() {
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3">
             <span className="text-6xl">✉️</span>
-            <p className="text-lg text-gray-400">
+            <p className="text-lg text-gray-400 text-center px-4">
               Select a conversation to start chatting
             </p>
           </div>

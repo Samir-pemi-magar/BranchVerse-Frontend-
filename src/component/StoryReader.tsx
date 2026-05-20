@@ -9,7 +9,13 @@ import {
 } from "@/src/Services/storyApi";
 import { useEffect, useState } from "react";
 import { MdDateRange } from "react-icons/md";
-import { FaEye, FaRegBookmark, FaComment, FaBookmark } from "react-icons/fa";
+import {
+  FaEye,
+  FaRegBookmark,
+  FaComment,
+  FaBookmark,
+  FaFlag,
+} from "react-icons/fa";
 import { FcLike } from "react-icons/fc";
 import { PiGitBranch } from "react-icons/pi";
 import {
@@ -18,6 +24,7 @@ import {
   DisableChapter,
   EnableChapter,
 } from "@/src/Services/storyApi";
+import ReportModal from "./Reportmodal";
 
 export interface Comment {
   _id: string;
@@ -65,6 +72,7 @@ export default function StoryReaderComponent({
   const [activeMenu, setActiveMenu] = useState<string | null>(null);
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [chapterBookmarked, setChapterBookmarked] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
 
   useEffect(() => {
     if (!ChapterContent?._id) return;
@@ -85,7 +93,6 @@ export default function StoryReaderComponent({
 
   const handleBookmarkChapter = async () => {
     if (!ChapterContent?._id) return;
-
     try {
       const res = await ToggleChapterBookmark(ChapterContent._id);
       setChapterBookmarked(res.bookmarked);
@@ -112,17 +119,13 @@ export default function StoryReaderComponent({
 
   const handleDeleteChapter = async () => {
     if (!ChapterContent?._id) return;
-
     const confirmDelete = confirm(
       "Are you sure? If this chapter has branches, it will be disabled instead.",
     );
     if (!confirmDelete) return;
-
     try {
       const res = await DeleteChapter(ChapterContent._id);
       alert(res.message);
-
-      // redirect after delete
       window.location.href = `/Users/StoryPreview?id=${ChapterContent.storyId}`;
     } catch (err) {
       console.error(err);
@@ -131,7 +134,6 @@ export default function StoryReaderComponent({
 
   const handleDisableChapter = async () => {
     if (!ChapterContent?._id) return;
-
     try {
       const res = await DisableChapter(ChapterContent._id);
       alert(res.message);
@@ -141,10 +143,8 @@ export default function StoryReaderComponent({
     }
   };
 
-  // ---------------- LIKE ----------------
   const handleLike = async () => {
     if (!ChapterContent?._id) return;
-
     try {
       const res = await LikeChapter(ChapterContent._id);
       setLikes(res.likes);
@@ -153,14 +153,11 @@ export default function StoryReaderComponent({
     }
   };
 
-  // ---------------- COMMENT ----------------
   const handleComment = async () => {
     if (!ChapterContent?._id || !commentText.trim()) return;
-
     try {
       setLoading(true);
       await CommentChapter(ChapterContent._id, commentText);
-
       const updated = await GetComments(ChapterContent._id);
       setComments(updated);
       setCommentText("");
@@ -171,10 +168,8 @@ export default function StoryReaderComponent({
     }
   };
 
-  // ---------------- REPLY ----------------
   const handleReply = async (parentId: string) => {
     if (!ChapterContent?._id || !replyText[parentId]?.trim()) return;
-
     try {
       setLoading(true);
       const updated = await ReplyToComment(
@@ -182,7 +177,6 @@ export default function StoryReaderComponent({
         parentId,
         replyText[parentId],
       );
-
       setComments(updated);
       setReplyText((prev) => ({ ...prev, [parentId]: "" }));
       setActiveReply(null);
@@ -193,11 +187,6 @@ export default function StoryReaderComponent({
     }
   };
 
-  if (!ChapterContent) {
-    return <div className="p-10 text-red-500">No chapter loaded</div>;
-  }
-
-  // ---------------- COMMENT ITEM (recursive) ----------------
   const CommentItem = ({
     comment,
     level = 0,
@@ -208,21 +197,17 @@ export default function StoryReaderComponent({
     return (
       <div className="flex flex-col" key={comment._id}>
         <div className="flex gap-3 relative">
-          {/* Profile pic */}
-          <div
-            className={`w-10 h-10 rounded-full bg-[#00B8AE] flex items-center justify-center text-white font-bold flex-shrink-0`}
-          >
+          <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#00B8AE] flex items-center justify-center text-white font-bold flex-shrink-0">
             {comment.user?.username?.charAt(0).toUpperCase() || "U"}
           </div>
 
-          <div className="flex flex-col w-full">
-            {/* Header: username + date + dots menu */}
+          <div className="flex flex-col w-full min-w-0">
             <div className="flex justify-between items-center relative">
-              <span className="font-bold text-black">
+              <span className="font-bold text-black text-sm sm:text-base truncate">
                 {comment.user?.username}
               </span>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-400">
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <span className="text-xs text-gray-400 hidden sm:inline">
                   {new Date(comment.createdAt).toLocaleDateString()}
                 </span>
                 <button
@@ -252,12 +237,16 @@ export default function StoryReaderComponent({
               </div>
             </div>
 
-            {/* Comment text */}
-            <span className="text-sm text-[#837E7E] mt-1">{comment.text}</span>
+            <span className="text-xs text-gray-400 sm:hidden">
+              {new Date(comment.createdAt).toLocaleDateString()}
+            </span>
 
-            {/* Reply input */}
+            <span className="text-sm text-[#837E7E] mt-1 break-words">
+              {comment.text}
+            </span>
+
             {activeReply === comment._id && (
-              <div className={`flex gap-2 mt-1 ml-${level * 6}`}>
+              <div className="flex gap-2 mt-2">
                 <input
                   value={replyText[comment._id] || ""}
                   onChange={(e) =>
@@ -267,20 +256,19 @@ export default function StoryReaderComponent({
                     }))
                   }
                   placeholder="Write a reply..."
-                  className="flex-1 border px-2 py-1 rounded-sm text-sm"
+                  className="flex-1 border px-2 py-1 rounded-sm text-sm min-w-0"
                 />
                 <button
                   onClick={() => handleReply(comment._id)}
                   disabled={loading}
-                  className="bg-[#00B8AE] text-white px-3 py-1 rounded-sm disabled:opacity-50 text-sm"
+                  className="bg-[#00B8AE] text-white px-3 py-1 rounded-sm disabled:opacity-50 text-sm flex-shrink-0"
                 >
                   Reply
                 </button>
               </div>
             )}
 
-            {/* Replies */}
-            <div className="ml-12 mt-2 flex flex-col gap-2">
+            <div className="ml-6 sm:ml-12 mt-2 flex flex-col gap-2">
               {comment.replies?.map((reply) => (
                 <CommentItem
                   key={reply._id}
@@ -295,17 +283,19 @@ export default function StoryReaderComponent({
     );
   };
 
-  // ---------------- MAIN RENDER ----------------
   return (
-    <div className="flex flex-col w-full h-full pr-45 pl-10">
+    <div className="flex flex-col w-full h-full px-4 sm:px-8 md:pl-10 md:pr-20">
       {/* TITLE SECTION */}
-      <div className="flex flex-col w-full mt-7 gap-10">
-        <div className="flex flex-col gap-9">
-          <span className="font-bold text-[48px] leading-[60px] tracking-[-1.2px]">
+      <div className="flex flex-col w-full mt-5 sm:mt-7 gap-6 sm:gap-10">
+        <div className="flex flex-col gap-5 sm:gap-9">
+          {/* Title */}
+          <span className="font-bold text-2xl sm:text-4xl md:text-[48px] leading-tight md:leading-[60px] tracking-tight md:tracking-[-1.2px]">
             {ChapterContent.title}
           </span>
+
+          {/* Author controls */}
           {isAuthor && (
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <button
                 onClick={handleUpdateChapter}
                 className="text-sm px-3 py-1 border rounded hover:bg-gray-100"
@@ -327,18 +317,18 @@ export default function StoryReaderComponent({
             </div>
           )}
 
-          {/* AUTHOR + TAGS */}
-          <div className="flex flex-col gap-5 -mt-3">
-            <div className="flex flex-row gap-[23px]">
-              <span className="font-bold text-[16px]">
+          {/* Author + tags + stats */}
+          <div className="flex flex-col gap-4 -mt-1 sm:-mt-3">
+            <div className="flex flex-wrap items-center gap-2 sm:gap-[23px]">
+              <span className="font-bold text-sm sm:text-[16px]">
                 {ChapterContent.author}
               </span>
-              <p>|</p>
+              <p className="hidden sm:block">|</p>
               <div className="flex flex-wrap gap-2">
                 {ChapterContent.tags?.map((tag) => (
                   <span
                     key={tag}
-                    className="bg-[#F6F3FC] text-xs font-semibold px-4 py-1.5 rounded-full"
+                    className="bg-[#F6F3FC] text-xs font-semibold px-3 sm:px-4 py-1 sm:py-1.5 rounded-full"
                   >
                     {tag}
                   </span>
@@ -346,8 +336,8 @@ export default function StoryReaderComponent({
               </div>
             </div>
 
-            {/* STATS */}
-            <div className="flex flex-row gap-7">
+            {/* Stats */}
+            <div className="flex flex-wrap gap-4 sm:gap-7 text-sm sm:text-base">
               <div className="flex gap-1.5 items-center">
                 <FcLike />
                 <span>{likes}</span>
@@ -371,26 +361,27 @@ export default function StoryReaderComponent({
         </div>
 
         {/* CONTENT */}
-        <div className="flex flex-col w-full gap-10">
+        <div className="flex flex-col w-full gap-6 sm:gap-10">
           <div
-            className="prose max-w-none"
+            className="prose max-w-none text-sm sm:text-base"
             dangerouslySetInnerHTML={{ __html: ChapterContent.content }}
           />
 
           {/* ACTION BUTTONS */}
-          <div className="flex flex-col gap-5">
+          <div className="flex flex-col gap-4 sm:gap-5">
             <hr className="border-[#EBE4E4]" />
-            <div className="flex gap-6 text-lg">
+
+            <div className="flex flex-wrap gap-2 sm:gap-4 text-sm sm:text-base">
               <button
                 onClick={handleLike}
-                className="flex gap-2 items-center border-2 px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition"
+                className="flex gap-2 items-center border-2 px-3 sm:px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition"
               >
                 <FcLike />
                 <span>Like</span>
               </button>
               <button
                 onClick={handleBookmarkChapter}
-                className={`flex gap-2 items-center border-2 px-4 py-1 rounded-sm font-semibold transition ${
+                className={`flex gap-2 items-center border-2 px-3 sm:px-4 py-1 rounded-sm font-semibold transition ${
                   chapterBookmarked
                     ? "bg-red-100 border-red-200 text-red-700 hover:bg-red-200"
                     : "border-gray-200 hover:bg-[#00B8AE] hover:text-white"
@@ -401,23 +392,35 @@ export default function StoryReaderComponent({
               </button>
               <button
                 onClick={() => setShowCommentInput(!showCommentInput)}
-                className="flex gap-2 items-center border-2 px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition"
+                className="flex gap-2 items-center border-2 px-3 sm:px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition"
               >
                 <FaComment />
                 <span>Comment</span>
               </button>
-              <button className="flex gap-2 items-center border-2 px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition">
+              <button className="flex gap-2 items-center border-2 px-3 sm:px-4 py-1 hover:bg-[#00B8AE] border-gray-200 rounded-sm hover:text-white font-semibold transition">
                 <PiGitBranch />
                 <span>Branch</span>
               </button>
+
+              {/* Report — hidden from the chapter's own author */}
+              {!isAuthor && (
+                <button
+                  onClick={() => setShowReportModal(true)}
+                  className="flex gap-2 items-center border-2 px-3 sm:px-4 py-1 border-gray-200 rounded-sm text-red-400 hover:bg-red-500 hover:text-white hover:border-red-500 font-semibold transition"
+                >
+                  <FaFlag />
+                  <span>Report</span>
+                </button>
+              )}
             </div>
+
             <hr className="border-[#EBE4E4]" />
 
-            <div className="flex flex-row w-full justify-end gap-5">
-              <button className="bg-[#00B8AE] font-bold text-white px-4 py-1 rounded-sm text-center">
+            <div className="flex flex-row w-full justify-end gap-3">
+              <button className="bg-[#00B8AE] font-bold text-white px-4 py-1 rounded-sm text-center text-sm sm:text-base">
                 previous
               </button>
-              <button className="bg-[#00B8AE] font-bold text-white px-4 py-1 rounded-sm text-center">
+              <button className="bg-[#00B8AE] font-bold text-white px-4 py-1 rounded-sm text-center text-sm sm:text-base">
                 Next
               </button>
             </div>
@@ -427,36 +430,45 @@ export default function StoryReaderComponent({
 
       {/* COMMENTS SECTION */}
       {showCommentInput && (
-        <div className="bg-[#FAFAFB] mt-10 p-5 flex flex-col gap-5">
-          <h3 className="font-bold text-lg">Comments ({comments.length})</h3>
+        <div className="bg-[#FAFAFB] mt-6 sm:mt-10 p-4 sm:p-5 flex flex-col gap-4 sm:gap-5">
+          <h3 className="font-bold text-base sm:text-lg">
+            Comments ({comments.length})
+          </h3>
 
-          {/* INPUT */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 sm:gap-3">
             <input
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
               placeholder="Write a comment..."
-              className="flex-1 border px-3 py-2 rounded-sm"
+              className="flex-1 border px-3 py-2 rounded-sm text-sm sm:text-base min-w-0"
             />
             <button
               onClick={handleComment}
               disabled={loading}
-              className="bg-[#00B8AE] px-4 py-2 text-white rounded-sm disabled:opacity-50"
+              className="bg-[#00B8AE] px-3 sm:px-4 py-2 text-white rounded-sm disabled:opacity-50 text-sm sm:text-base flex-shrink-0"
             >
               {loading ? "Posting..." : "Post"}
             </button>
           </div>
 
-          {/* COMMENTS LIST */}
-          <div className="flex flex-col gap-4 mt-4">
+          <div className="flex flex-col gap-4 mt-2 sm:mt-4">
             {comments.length === 0 && (
-              <span className="text-gray-400">No comments yet.</span>
+              <span className="text-gray-400 text-sm">No comments yet.</span>
             )}
             {comments.map((comment) => (
               <CommentItem key={comment._id} comment={comment} />
             ))}
           </div>
         </div>
+      )}
+
+      {/* REPORT MODAL */}
+      {showReportModal && (
+        <ReportModal
+          storyId={ChapterContent.storyId}
+          storyTitle={ChapterContent.title}
+          onClose={() => setShowReportModal(false)}
+        />
       )}
     </div>
   );

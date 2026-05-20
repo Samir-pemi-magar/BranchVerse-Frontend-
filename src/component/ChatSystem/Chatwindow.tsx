@@ -30,14 +30,12 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
   const [loading, setLoading] = useState(true);
   const bottomRef = useRef<HTMLDivElement>(null);
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
-
   const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
     setCurrentUserId(localStorage.getItem("userId") || "");
   }, []);
 
-  // Load messages and join socket room whenever conversation changes
   useEffect(() => {
     setMessages([]);
     setPage(1);
@@ -66,7 +64,6 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
     };
   }, [conversation._id]);
 
-  // Scroll to bottom when new messages arrive
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -91,15 +88,12 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
     const trimmed = content.trim();
     if (!trimmed) return;
     setContent("");
-
     try {
       const saved = await sendMessage(conversation._id, trimmed);
-      // Add to your own state directly
       setMessages((prev) => {
         if (prev.find((m) => m._id === saved._id)) return prev;
         return [...prev, saved];
       });
-      // This only goes to OTHER users in the room (socket.to(...) on server)
       socket.emit("sendMessage", saved);
       onMessageSent();
     } catch (err) {
@@ -144,14 +138,16 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
   const displayName = getDisplayName(conversation, currentUserId);
 
   return (
-    <div className="flex flex-col h-full bg-white">
+    <div className="flex flex-col h-full bg-white min-h-0">
       {/* Header */}
-      <div className="flex items-center gap-3 px-5 py-4 border-b border-gray-300 bg-white">
-        <div className="w-9 h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-black">
+      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 bg-white flex-shrink-0">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
           {conversation.type === "group" ? "👥" : displayName[0]?.toUpperCase()}
         </div>
-        <div>
-          <p className="text-sm font-medium text-black">{displayName}</p>
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-black truncate">
+            {displayName}
+          </p>
           <p className="text-xs text-gray-500">
             {conversation.type === "group"
               ? `${conversation.participants.length} members`
@@ -161,8 +157,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-5 py-4 flex flex-col gap-1 bg-white">
-        {/* Load more */}
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-1 bg-white min-h-0">
         {hasMore && (
           <button
             onClick={() => {
@@ -204,7 +199,6 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
           })
         )}
 
-        {/* Typing indicator */}
         {isTyping && (
           <div className="flex items-center gap-2 text-gray-500 text-xs mt-1">
             <span className="flex gap-1">
@@ -229,8 +223,8 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
       </div>
 
       {/* Input */}
-      <div className="px-5 py-4 border-t border-gray-300 bg-white">
-        <div className="flex items-end gap-3 bg-gray-100 rounded-2xl px-4 py-3">
+      <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-gray-200 bg-white flex-shrink-0">
+        <div className="flex items-end gap-2 sm:gap-3 bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-3">
           <textarea
             rows={1}
             value={content}
@@ -240,7 +234,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent text-sm text-black placeholder-gray-500 resize-none outline-none max-h-32"
+            className="flex-1 bg-transparent text-sm text-black placeholder-gray-500 resize-none outline-none max-h-32 min-w-0"
           />
           <button
             onClick={handleSend}
@@ -251,7 +245,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
             ↑
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5 ml-1">
+        <p className="text-[10px] text-gray-400 mt-1.5 ml-1 hidden sm:block">
           Enter to send · Shift+Enter for new line
         </p>
       </div>

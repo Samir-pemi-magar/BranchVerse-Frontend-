@@ -1,18 +1,16 @@
 import StarterNavbar from "@/src/component/StarterNavbar";
 
-
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen flex flex-col">
-      {/* ✅ Shared Navbar */}
+    <div className="min-h-screen">
       <StarterNavbar />
 
-      {/* ✅ Page Content */}
-      {children}
+      {/* Offset fixed navbar height */}
+      <main className="pt-[71px]">{children}</main>
     </div>
   );
 }

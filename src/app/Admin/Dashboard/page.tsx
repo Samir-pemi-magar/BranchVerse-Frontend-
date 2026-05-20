@@ -38,20 +38,20 @@ const MetricCard = ({
 
   return (
     <div
-      className={`rounded-xl p-5 flex flex-col gap-3 border ${
+      className={`rounded-xl p-4 sm:p-5 flex flex-col gap-3 border ${
         accent && flagged && flagged > 0
           ? "bg-red-950/20 border-red-900/40"
           : "bg-neutral-900 border-neutral-800"
       }`}
     >
       <div className="flex items-center justify-between">
-        <span className="text-xs tracking-widest text-neutral-500 uppercase">
+        <span className="text-[10px] tracking-widest text-neutral-500 uppercase">
           {label}
         </span>
         <span className="text-lg">{icon}</span>
       </div>
 
-      <p className="text-4xl font-bold tracking-tight text-neutral-100">
+      <p className="text-3xl sm:text-4xl font-bold tracking-tight text-neutral-100">
         {formatCount(value)}
       </p>
 
@@ -68,7 +68,6 @@ const MetricCard = ({
               {pct ? ` (${pct}%)` : ""}
             </span>
           </div>
-          {/* Progress bar showing flagged % */}
           <div className="h-1 rounded-full bg-neutral-800 overflow-hidden">
             <div
               className="h-full rounded-full transition-all"
@@ -186,13 +185,13 @@ export default function DashboardPage() {
     : [];
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8 px-4 sm:px-0">
       {/* Header */}
       <div>
         <p className="text-xs tracking-widest text-neutral-500 uppercase mb-1">
           Overview
         </p>
-        <h1 className="text-3xl font-bold text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white tracking-tight">
           Dashboard
         </h1>
       </div>
@@ -210,7 +209,7 @@ export default function DashboardPage() {
         </div>
       ) : (
         <>
-          {/* Metric cards */}
+          {/* Users */}
           <section>
             <p className="text-[10px] tracking-widest text-neutral-600 uppercase mb-3">
               Users
@@ -234,6 +233,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
+          {/* Stories */}
           <section>
             <p className="text-[10px] tracking-widest text-neutral-600 uppercase mb-3">
               Stories
@@ -257,11 +257,12 @@ export default function DashboardPage() {
             </div>
           </section>
 
+          {/* Chapters — 2-col on mobile, 3-col on sm+ */}
           <section>
             <p className="text-[10px] tracking-widest text-neutral-600 uppercase mb-3">
               Chapters
             </p>
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <MetricCard
                 label="Total Chapters"
                 value={stats.chapters.total}
@@ -277,18 +278,21 @@ export default function DashboardPage() {
                 icon="🔒"
                 color="#60a5fa"
               />
-              <MetricCard
-                label="Branches"
-                value={stats.branches.total}
-                icon="🌿"
-                color="#f59e0b"
-              />
+              {/* Full-width on mobile when it's the odd card out */}
+              <div className="col-span-2 sm:col-span-1">
+                <MetricCard
+                  label="Branches"
+                  value={stats.branches.total}
+                  icon="🌿"
+                  color="#f59e0b"
+                />
+              </div>
             </div>
           </section>
 
-          {/* Flagged rate chart — uses % not raw count */}
+          {/* Flagged rate chart */}
           <section>
-            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6">
+            <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-4 sm:p-6">
               <div className="mb-4">
                 <p className="text-sm font-medium text-neutral-200">
                   Flagged / disabled rate
@@ -299,9 +303,10 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              <div className="flex items-center gap-6">
+              {/* Stack vertically on mobile, side-by-side on sm+ */}
+              <div className="flex flex-col sm:flex-row items-center gap-6">
                 {/* Radial chart */}
-                <div className="w-48 h-48 flex-shrink-0">
+                <div className="w-40 h-40 sm:w-48 sm:h-48 shrink-0">
                   <ResponsiveContainer width="100%" height="100%">
                     <RadialBarChart
                       cx="50%"
@@ -322,14 +327,14 @@ export default function DashboardPage() {
                   </ResponsiveContainer>
                 </div>
 
-                {/* Legend + values */}
-                <div className="flex-1 space-y-4">
+                {/* Legend + progress bars */}
+                <div className="w-full flex-1 space-y-4">
                   {radialData.map((d) => (
                     <div key={d.name} className="space-y-1">
                       <div className="flex items-center justify-between text-xs">
                         <span className="flex items-center gap-2">
                           <span
-                            className="w-2.5 h-2.5 rounded-sm"
+                            className="w-2.5 h-2.5 rounded-sm shrink-0"
                             style={{ background: d.fill }}
                           />
                           <span className="text-neutral-400">{d.name}</span>

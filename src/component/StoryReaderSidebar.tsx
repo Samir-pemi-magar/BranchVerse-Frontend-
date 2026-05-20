@@ -1,3 +1,5 @@
+"use client";
+
 import { useEffect, useState, useMemo } from "react";
 import { GetChaptersHierarchy } from "../Services/storyApi";
 
@@ -31,7 +33,6 @@ export default function StoryReaderSidebar({
 }: SidebarProps) {
   const [hierarchy, setHierarchy] = useState<HierarchyChapter[]>([]);
 
-  // ✅ Fetch hierarchy once storyId exists
   useEffect(() => {
     if (!chapterContent?.storyId) return;
 
@@ -47,7 +48,6 @@ export default function StoryReaderSidebar({
     fetchHierarchy();
   }, [chapterContent?.storyId]);
 
-  // ✅ Derived lineage (NO setState, no ESLint warning)
   const lineage = useMemo(() => {
     if (!chapterContent || hierarchy.length === 0) return [];
 
@@ -58,11 +58,7 @@ export default function StoryReaderSidebar({
     ): Chapter[] | null => {
       for (const node of nodes) {
         const newPath = [...path, node];
-
-        if (node._id === targetId) {
-          return newPath;
-        }
-
+        if (node._id === targetId) return newPath;
         if (node.branches && node.branches.length > 0) {
           const found = buildLineage(node.branches, targetId, newPath);
           if (found) return found;
@@ -75,7 +71,7 @@ export default function StoryReaderSidebar({
   }, [chapterContent, hierarchy]);
 
   return (
-    <div className="relative w-full h-full rounded overflow-hidden">
+    <div className="relative w-full h-full min-h-[280px] sm:min-h-[400px] rounded overflow-hidden">
       {/* Cover Image */}
       <img
         src={coverSrc}
@@ -84,10 +80,16 @@ export default function StoryReaderSidebar({
       />
 
       {/* Overlay */}
-      <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-6 gap-3">
-        <span className="text-white font-bold text-lg">Branch Lineage</span>
+      <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4 sm:p-6 gap-3">
+        <span className="text-white font-bold text-base sm:text-lg">
+          Branch Lineage
+        </span>
 
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 max-h-[40vh] sm:max-h-[60vh] overflow-y-auto pr-1">
+          {lineage.length === 0 && (
+            <span className="text-white/60 text-sm">Loading lineage...</span>
+          )}
+
           {lineage.map((chapter, index) => {
             const isOrigin = index === 0;
             const isCurrent = chapter._id === chapterContent?._id;
@@ -96,7 +98,7 @@ export default function StoryReaderSidebar({
             return (
               <div
                 key={chapter._id}
-                className={`flex justify-between items-center rounded px-4 py-2 transition ${
+                className={`flex justify-between items-center rounded px-3 sm:px-4 py-2 gap-2 transition ${
                   isCurrent
                     ? "bg-cyan-400"
                     : isOrigin
@@ -104,12 +106,12 @@ export default function StoryReaderSidebar({
                       : "bg-yellow-400"
                 }`}
               >
-                <span className="text-black font-semibold">
+                <span className="text-black font-semibold text-xs sm:text-sm truncate min-w-0">
                   {chapter.branchTitle || chapter.title}
                 </span>
 
                 <span
-                  className={`text-white text-xs px-2 py-1 rounded-full ${
+                  className={`text-white text-xs px-2 py-0.5 sm:py-1 rounded-full flex-shrink-0 ${
                     isOrigin
                       ? "bg-red-500"
                       : isLast

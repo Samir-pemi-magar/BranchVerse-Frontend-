@@ -1,3 +1,4 @@
+// RichMenuBar.tsx
 import { Editor } from "@tiptap/react";
 import {
   AlignCenter,
@@ -86,7 +87,8 @@ export default function MenuBar({ editor }: MenuBarProps) {
   ];
 
   return (
-    <div className="border rounded-md p-1 mb-1 bg-slate-50 space-x-2 z-50">
+    // Added flex-wrap so toolbar wraps on small screens instead of overflowing
+    <div className="border rounded-md p-1 mb-1 bg-slate-50 flex flex-wrap gap-1 z-50">
       {Options.map((option, index) => (
         <Toggle
           key={index}

@@ -1,3 +1,4 @@
+// CreateStoryPage.tsx
 "use client";
 
 import RichTextEditor from "@/src/component/Richtexteditor";
@@ -8,11 +9,11 @@ import { useSearchParams } from "next/navigation";
 export default function CreateStoryPage() {
   const searchParams = useSearchParams();
   const storyId = searchParams.get("storyId");
-  const parentChapterId = searchParams.get("parentChapterId") || undefined; // ✅ convert null to undefined
+  const parentChapterId = searchParams.get("parentChapterId") || undefined;
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
-  const [branchTitle, setBranchTitle] = useState("My Branch"); // optional branch title
+  const [branchTitle, setBranchTitle] = useState("My Branch");
   const [loading, setLoading] = useState(false);
 
   if (!storyId) {
@@ -27,7 +28,7 @@ export default function CreateStoryPage() {
         storyId,
         title,
         content,
-        parentChapterId, // optional, only needed for branch
+        parentChapterId,
         branchTitle: parentChapterId ? branchTitle : undefined,
       });
       alert(parentChapterId ? "Branch created!" : "Chapter published!");
@@ -43,13 +44,13 @@ export default function CreateStoryPage() {
   };
 
   return (
-    <main className="py-[75px] w-full bg-white px-[140px] flex flex-col">
+    <main className="py-8 sm:py-[75px] w-full bg-white px-4 sm:px-8 md:px-16 lg:px-[140px] flex flex-col">
       <input
         type="text"
         placeholder="Story title..."
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        className="w-full text-3xl font-bold outline-none border-none mb-6"
+        className="w-full text-xl sm:text-3xl font-bold outline-none border-none mb-6"
       />
 
       <RichTextEditor content={content} onChange={setContent} />
@@ -57,7 +58,7 @@ export default function CreateStoryPage() {
       <button
         onClick={handlePublish}
         disabled={loading}
-        className="mt-6 self-end bg-black text-white px-6 py-2 rounded disabled:opacity-50"
+        className="mt-6 self-end bg-black text-white px-6 py-2 rounded disabled:opacity-50 text-sm sm:text-base"
       >
         {loading
           ? "Publishing..."

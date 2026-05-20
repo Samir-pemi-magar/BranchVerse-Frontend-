@@ -7,10 +7,8 @@ import {
   ToggleStoryBookmark,
 } from "../Services/storyApi";
 import { FaEye } from "react-icons/fa";
+import ReportModal from "./Reportmodal";
 
-// -----------------------
-// Interfaces
-// -----------------------
 interface Story {
   _id: string;
   title: string;
@@ -36,9 +34,6 @@ interface StoryCardProps {
   onDisable?: (id: string) => void;
 }
 
-// -----------------------
-// Component
-// -----------------------
 const StoryCard: React.FC<StoryCardProps> = ({
   story,
   currentUserId,
@@ -47,6 +42,7 @@ const StoryCard: React.FC<StoryCardProps> = ({
   onDisable,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const router = useRouter();
   const [bookmarked, setBookmarked] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -68,7 +64,6 @@ const StoryCard: React.FC<StoryCardProps> = ({
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("Are you sure you want to delete this story?")) return;
-
     try {
       if (onDelete) {
         await onDelete(story._id);
@@ -85,7 +80,6 @@ const StoryCard: React.FC<StoryCardProps> = ({
   const handleDisable = async (e: React.MouseEvent) => {
     e.stopPropagation();
     if (!confirm("Do you want to disable this story?")) return;
-
     try {
       await DisableStory(story._id);
       if (onDisable) await onDisable(story._id);
@@ -98,7 +92,6 @@ const StoryCard: React.FC<StoryCardProps> = ({
 
   const handleBookmark = async (e: React.MouseEvent) => {
     e.stopPropagation();
-
     try {
       const res = await ToggleStoryBookmark(story._id);
       setBookmarked(res.bookmarked);
@@ -108,27 +101,34 @@ const StoryCard: React.FC<StoryCardProps> = ({
   };
 
   return (
-    <div
-      onClick={() => router.push(`/Users/StoryPreview?id=${story._id}`)}
-      className="bg-white border rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden flex flex-col relative"
-    >
-      {/* Cover Image */}
-      <div className="relative h-[200px]">
-        <img
-          src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-          alt={story.title}
-          className="absolute inset-0 w-full h-full object-cover z-0"
+    <>
+      {reportOpen && (
+        <ReportModal
+          storyId={story._id}
+          storyTitle={story.title}
+          onClose={() => setReportOpen(false)}
         />
+      )}
 
-        {/* Branchable Badge */}
-        {story.branchAllowed && (
-          <div className="absolute top-3 left-3 z-20 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold">
-            Branchable
-          </div>
-        )}
+      <div
+        onClick={() => router.push(`/Users/StoryPreview?id=${story._id}`)}
+        className="bg-white border rounded-xl shadow-sm hover:shadow-lg transition cursor-pointer overflow-hidden flex flex-col relative"
+      >
+        {/* Cover Image */}
+        <div className="relative h-[180px] sm:h-[200px]">
+          <img
+            src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+            alt={story.title}
+            className="absolute inset-0 w-full h-full object-cover z-0"
+          />
 
-        {/* Author Menu */}
-        {isAuthor && (
+          {story.branchAllowed && (
+            <div className="absolute top-3 left-3 z-20 bg-[#00B8AE] px-2 py-1 rounded text-white text-xs font-semibold">
+              Branchable
+            </div>
+          )}
+
+          {/* ⋮ menu — always visible */}
           <div className="absolute top-3 right-3 z-30">
             <button
               onClick={(e) => {
@@ -145,103 +145,116 @@ const StoryCard: React.FC<StoryCardProps> = ({
                 className="absolute right-0 mt-2 w-36 bg-white border rounded shadow-lg z-40"
                 onClick={(e) => e.stopPropagation()}
               >
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    router.push(`/Users/EditStory?id=${story._id}`);
-                  }}
-                >
-                  Edit
-                </button>
-
-                <button
-                  className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
-                  onClick={handleDisable}
-                >
-                  Disable
-                </button>
-
-                <button
-                  className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-                  onClick={handleDelete}
-                >
-                  Delete
-                </button>
+                {isAuthor ? (
+                  <>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        router.push(`/Users/EditStory?id=${story._id}`);
+                      }}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100"
+                      onClick={handleDisable}
+                    >
+                      Disable
+                    </button>
+                    <button
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+                      onClick={handleDelete}
+                    >
+                      Delete
+                    </button>
+                  </>
+                ) : (
+                  <button
+                    className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-gray-100"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setMenuOpen(false);
+                      setReportOpen(true);
+                    }}
+                  >
+                    🚩 Report
+                  </button>
+                )}
               </div>
             )}
           </div>
-        )}
-      </div>
+        </div>
 
-      {/* Story Info */}
-      <div className="p-4 flex-1 flex flex-col">
-        <h3 className="font-bold text-lg text-gray-900 line-clamp-2">
-          {story.title}
-        </h3>
+        {/* Story Info */}
+        <div className="p-3 sm:p-4 flex-1 flex flex-col">
+          <h3 className="font-bold text-base sm:text-lg text-gray-900 line-clamp-2">
+            {story.title}
+          </h3>
 
-        <p className="text-sm text-gray-500 mt-1">
-          By {story.author.username} • {timeAgo(story.createdAt)}
-        </p>
+          <p className="text-sm text-gray-500 mt-1">
+            By {story.author.username} • {timeAgo(story.createdAt)}
+          </p>
 
-        <p className="text-sm text-gray-600 mt-3 line-clamp-3">
-          {story.description}
-        </p>
+          <p className="text-sm text-gray-600 mt-3 line-clamp-3">
+            {story.description}
+          </p>
 
-        {/* Stats */}
-        <div className="mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-sm text-gray-500">
-              <FaEye />
-              <span>{story.views}</span>
+          {/* Stats */}
+          <div className="mt-4 flex items-center justify-between flex-wrap gap-2">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <FaEye />
+                <span>{story.views}</span>
+              </div>
+
+              <div
+                className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
+                  liked ? "text-red-500" : "text-gray-400"
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLiked((prev) => !prev);
+                  setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
+                  handleLikeStory(story._id);
+                }}
+              >
+                {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleBookmark}
+                aria-label="Bookmark story"
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#00B8AE]/50 active:bg-gray-200 ${
+                  bookmarked
+                    ? "text-red-500 bg-red-50 hover:bg-red-100"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
+                }`}
+              >
+                {bookmarked ? <FaBookmark /> : <FaRegBookmark />}
+              </button>
             </div>
 
-            <div
-              className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
-                liked ? "text-red-500" : "text-gray-400"
-              }`}
-              onClick={(e) => {
-                e.stopPropagation();
-                setLiked((prev) => !prev);
-                setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-                handleLikeStory(story._id);
-              }}
-            >
-              {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
-            </div>
-            <button
-              type="button"
-              onClick={handleBookmark}
-              aria-label="Bookmark story"
-              className={`inline-flex h-9 w-9 items-center justify-center rounded-full bg-white shadow-sm transition focus:outline-none focus:ring-2 focus:ring-[#00B8AE]/50 active:bg-gray-200 ${
-                bookmarked
-                  ? "text-red-500 bg-red-50 hover:bg-red-100"
-                  : "text-gray-500 hover:bg-gray-100 hover:text-gray-700"
-              }`}
-            >
-              {bookmarked ? <FaBookmark /> : <FaRegBookmark />}
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="text-xs text-gray-500">
-              {story.branchesCount} branches
-            </div>
-
-            <div className="flex gap-1">
-              {story.tags.slice(0, 3).map((t, i) => (
-                <span
-                  key={i}
-                  className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
-                >
-                  {t}
-                </span>
-              ))}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="text-xs text-gray-500">
+                {story.branchesCount} branches
+              </div>
+              <div className="flex gap-1 flex-wrap">
+                {story.tags.slice(0, 3).map((t, i) => (
+                  <span
+                    key={i}
+                    className="px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
+                  >
+                    {t}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </>
   );
 };
 
