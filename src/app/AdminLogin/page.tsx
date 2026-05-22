@@ -6,7 +6,7 @@ import adminAxios from "@/src/Services/adminAxios";
 
 type AdminLoginForm = { email: string; password: string };
 
-export default function AdminLogin1() {
+export default function AdminLogin() {
   const router = useRouter();
   const { register, handleSubmit } = useForm<AdminLoginForm>();
 
@@ -33,7 +33,7 @@ export default function AdminLogin1() {
           <p className="text-[10px] tracking-widest text-neutral-500 uppercase mb-1">
             Admin Panel
           </p>
-          <h1 className="text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             Sign In
           </h1>
         </div>
@@ -64,7 +64,7 @@ export default function AdminLogin1() {
 
         <button
           type="submit"
-          className="mt-2 w-full px-5 py-2.5 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono cursor-pointer"
+          className="mt-2 w-full px-5 py-3 bg-neutral-800 border border-neutral-700 text-neutral-300 text-xs tracking-widest hover:border-neutral-500 hover:text-neutral-100 transition-colors font-mono cursor-pointer"
         >
           LOG IN
         </button>

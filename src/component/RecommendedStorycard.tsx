@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { DisableStory, DeleteStory } from "../Services/storyApi";
 import ReportModal from "./Reportmodal";
-import { FaEye } from "react-icons/fa";
+import { FaEye, FaHeart } from "react-icons/fa";
 
 interface Author {
   _id: string;
@@ -30,14 +30,15 @@ interface RecommendedStoryCardProps {
   handleLikeStory?: (id: string) => Promise<void>;
   onDelete?: (id: string) => void;
   onDisable?: (id: string) => void;
+  isLiked?: boolean;
 }
 
 const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
   story,
   currentUserId,
-  handleLikeStory,
   onDelete,
   onDisable,
+  isLiked = false,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
@@ -45,8 +46,6 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
 
   const isAuthor =
     String(currentUserId).trim() === String(story.author._id).trim();
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(story.likes);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -102,6 +101,7 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
             src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
             alt={story.title}
             className="w-full h-full object-cover"
+            loading="lazy"
           />
 
           {story.branchAllowed && (
@@ -190,22 +190,12 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
                 <span>{story.views}</span>
               </div>
 
-              {handleLikeStory && (
-                <div
-                  className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
-                    liked ? "text-red-500" : "text-gray-400"
-                  }`}
-                  onClick={async (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setLiked((prev) => !prev);
-                    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-                    await handleLikeStory(story._id);
-                  }}
-                >
-                  {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
-                </div>
-              )}
+              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                <FaHeart
+                  className={isLiked ? "text-red-400" : "text-gray-300"}
+                />
+                <span>{story.likes}</span>
+              </div>
             </div>
 
             <div className="flex items-center gap-1 text-xs text-gray-500 flex-wrap">

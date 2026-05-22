@@ -77,14 +77,16 @@ export default function Home() {
   const [topStories, setTopStories] = useState<Story[]>([]);
 
   useEffect(() => {
+    const id =
+      localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
+    if (id) setCurrentUserId(id);
+  }, []);
+
+  useEffect(() => {
     const fetchAllStories = async () => {
       try {
         const data = await GetAllStories();
         setStories(data.stories);
-        const userId = data?.currentUserId;
-        if (userId) {
-          setCurrentUserId(userId);
-        }
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       }
@@ -162,7 +164,7 @@ export default function Home() {
     const fetchRecommended = async () => {
       try {
         const data = await GetRecommendedStories();
-        setRecommendedStories(data);
+        setRecommendedStories(data.stories ?? []);
       } catch (err) {
         console.error("Failed to fetch recommended stories", err);
       }

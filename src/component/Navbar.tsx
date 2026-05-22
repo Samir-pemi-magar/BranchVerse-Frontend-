@@ -164,7 +164,9 @@ export default function Navbar() {
 
   useEffect(() => {
     const fetchProfile = async () => {
-      const token = localStorage.getItem("token");
+      const token =
+        localStorage.getItem("token") ?? sessionStorage.getItem("token");
+
       if (!token) return;
       try {
         const profile = await GetProfile();
@@ -202,11 +204,14 @@ export default function Navbar() {
     if (!issueType || !message.trim()) return;
     setSending(true);
     try {
-      const res = await fetch("/api/support", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ issueType, message: message.trim() }),
-      });
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASEURL}/api/auth/support`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ issueType, message: message.trim() }),
+        },
+      );
       if (res.ok) {
         alert("Message sent! Your report is anonymous.");
         resetSupportForm();

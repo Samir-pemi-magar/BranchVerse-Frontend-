@@ -33,7 +33,9 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
   const [currentUserId, setCurrentUserId] = useState("");
 
   useEffect(() => {
-    setCurrentUserId(localStorage.getItem("userId") || "");
+    setCurrentUserId(
+      localStorage.getItem("userId") ?? sessionStorage.getItem("userId") ?? "",
+    );
   }, []);
 
   useEffect(() => {

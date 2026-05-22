@@ -34,7 +34,11 @@ export default function ConversationList({
   selected,
   onSelect,
 }: Props) {
-  const [currentUserId] = useState(() => localStorage.getItem("userId") || "");
+  const [currentUserId] = useState(
+    () =>
+      localStorage.getItem("userId") ??
+      (sessionStorage.getItem("userId") || ""),
+  );
 
   return (
     <ul className="py-2">

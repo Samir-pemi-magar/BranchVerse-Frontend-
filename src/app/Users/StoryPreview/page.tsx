@@ -4,7 +4,6 @@ import { useSearchParams } from "next/navigation";
 import {
   getSingleStory,
   GetMainChapters,
-  LikeStory,
   GetPersonalizedStories,
 } from "@/src/Services/storyApi";
 import { getPreferences } from "@/src/Services/authapi";
@@ -44,6 +43,7 @@ export interface Chapter {
   _id: string;
   title: string;
   chapterNumber: number;
+  likes: number;
 }
 
 export interface BranchChapter extends Chapter {
@@ -84,10 +84,11 @@ export default function StoryPreview() {
 
   const [chapterHierarchy, setChapterHierarchy] = useState<ChapterNode[]>([]);
 
+  // FIX: return undefined instead of "" so React omits the src attribute entirely
   const coverSrc =
     story?.cover && process.env.NEXT_PUBLIC_BASEURL
       ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
-      : "/images/placeholder-cover.png";
+      : undefined;
 
   useEffect(() => {
     const fetchPreferences = async () => {
@@ -168,9 +169,24 @@ export default function StoryPreview() {
     }
   }, [storyId, preferences]);
 
-  const handleLikeStory = async (id: string) => {
-    const res = await LikeStory(id);
-    setLikes(res.likes);
+  // Seed likes from first chapter once chapters are loaded
+  useEffect(() => {
+    if (chapters.length > 0) {
+      setLikes(chapters[0].likes ?? 0);
+    }
+  }, [chapters]);
+
+  const handleLikeStory = async () => {
+    if (!chapters || chapters.length === 0) return;
+    const firstChapterId = chapters[0]._id;
+    try {
+      const res = await axiosInstance.post(
+        `/api/chapters/${firstChapterId}/like`,
+      );
+      setLikes(res.data.likes);
+    } catch (err) {
+      console.error("Failed to like chapter", err);
+    }
   };
 
   const handleBranchStory = () => {
@@ -230,7 +246,8 @@ export default function StoryPreview() {
       <section className="flex flex-col md:flex-row w-full items-start gap-8 md:gap-12 lg:gap-20">
         {/* Cover Image */}
         <div className="w-full md:w-[280px] lg:w-[380px] xl:w-[504px] shrink-0">
-          {loading ? (
+          {/* FIX: show skeleton while loading OR while coverSrc is not yet available */}
+          {loading || !coverSrc ? (
             <div className="w-full h-[220px] sm:h-[280px] md:h-[304px] bg-gray-200 animate-pulse rounded" />
           ) : (
             <img
@@ -271,10 +288,10 @@ export default function StoryPreview() {
           <div className="flex flex-wrap gap-4 sm:gap-7 text-sm">
             <div
               className="flex flex-row gap-1.5 items-center cursor-pointer"
-              onClick={() => handleLikeStory(storyId)}
+              onClick={handleLikeStory}
             >
               <FcLike />
-              <span>{story?.likes ?? 0}</span>
+              <span>{likes}</span>
             </div>
 
             <div className="flex flex-row gap-1.5 items-center">
@@ -420,31 +437,45 @@ export default function StoryPreview() {
           More From BranchVerse
         </span>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full">
-          {personalizedStories.map((story) => (
-            <Link
-              key={story._id}
-              href={`/Users/StoryPreview?id=${story._id}`}
-              className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition flex flex-col"
-            >
-              <img
-                src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
-                className="w-full h-[180px] sm:h-[220px] rounded-lg object-cover"
-                alt={story.title}
-              />
-              <div className="mt-3 flex-1 flex flex-col">
-                <p className="text-base sm:text-[20px] font-bold line-clamp-2">
-                  {story.title}
-                </p>
-                <p className="text-sm text-gray-600 mt-1">
-                  By {story.author.username}
-                </p>
-                <div className="mt-3 flex items-center gap-2 text-[#00B8AE] font-semibold flex-wrap">
-                  <p className="text-sm">{story.branchesCount} Branches</p>
-                  <p className="text-sm text-gray-500">• {story.views} views</p>
+          {personalizedStories.map((story) => {
+            // FIX: guard personalized story covers the same way
+            const storyCoverSrc =
+              story.cover && process.env.NEXT_PUBLIC_BASEURL
+                ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                : undefined;
+
+            return (
+              <Link
+                key={story._id}
+                href={`/Users/StoryPreview?id=${story._id}`}
+                className="bg-white border rounded-xl shadow-md hover:shadow-lg p-3 transition flex flex-col"
+              >
+                {storyCoverSrc ? (
+                  <img
+                    src={storyCoverSrc}
+                    className="w-full h-[180px] sm:h-[220px] rounded-lg object-cover"
+                    alt={story.title}
+                  />
+                ) : (
+                  <div className="w-full h-[180px] sm:h-[220px] rounded-lg bg-gray-200 animate-pulse" />
+                )}
+                <div className="mt-3 flex-1 flex flex-col">
+                  <p className="text-base sm:text-[20px] font-bold line-clamp-2">
+                    {story.title}
+                  </p>
+                  <p className="text-sm text-gray-600 mt-1">
+                    By {story.author.username}
+                  </p>
+                  <div className="mt-3 flex items-center gap-2 text-[#00B8AE] font-semibold flex-wrap">
+                    <p className="text-sm">{story.branchesCount} Branches</p>
+                    <p className="text-sm text-gray-500">
+                      • {story.views} views
+                    </p>
+                  </div>
                 </div>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            );
+          })}
         </div>
       </section>
 

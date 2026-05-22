@@ -67,7 +67,8 @@ export const resetPassword = async (token: string, password: string) => {
 // ─── Chat ────────────────────────────────────────────────────────────────────
 
 export const getMyConversations = async () => {
-  const token = localStorage.getItem("token");
+  const token =
+    localStorage.getItem("token") ?? sessionStorage.getItem("token");
   console.log("Token being sent:", token);
   console.log(
     "Token payload:",

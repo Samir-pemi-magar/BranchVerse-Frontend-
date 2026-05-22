@@ -109,6 +109,13 @@ export default function StoryReaderComponent({
   const isAuthor =
     localStorage.getItem("userId") ??
     sessionStorage.getItem("userId") === String(ChapterContent.author);
+  console.log(
+    "userId from storage:",
+    localStorage.getItem("userId") ?? sessionStorage.getItem("userId"),
+  );
+  console.log("chapter author:", ChapterContent.author);
+  console.log("isAuthor:", isAuthor);
+  console.log("this is the ChapterContent._id", ChapterContent._id);
 
   const handleUpdateChapter = () => {
     const params = new URLSearchParams({
@@ -404,6 +411,8 @@ export default function StoryReaderComponent({
                 <PiGitBranch />
                 <span>Branch</span>
               </button>
+
+              {/* Add Chapter — only visible to the story's author */}
               {isAuthor && (
                 <button
                   onClick={() =>

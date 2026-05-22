@@ -116,12 +116,6 @@ interface FollowUser {
   username: string;
   profilePicture?: string;
 }
-const handleLogout = () => {
-  // Clear your auth token — adjust the key to match what your app uses
-  localStorage.removeItem("token");
-  // If you use cookies instead, you'd clear those here
-  router.push("/");
-};
 
 // ─── Follower/Following Modal ─────────────────────────────────────────────────
 function UserListModal({
@@ -729,6 +723,9 @@ export default function ProfilePage() {
                 myStories.map((story) => (
                   <div
                     key={story._id}
+                    onClick={() =>
+                      router.push(`/Users/StoryPreview?id=${story._id}`)
+                    }
                     className="flex flex-col gap-2 cursor-pointer group relative"
                   >
                     {/* Three-dot menu — own profile only */}
@@ -844,6 +841,10 @@ export default function ProfilePage() {
                 myBranches.map((branch) => (
                   <div
                     key={branch._id}
+                    onClick={() =>
+                      branch.story &&
+                      router.push(`/Users/StoryPreview?id=${branch.story._id}`)
+                    }
                     className="flex flex-col gap-2 cursor-pointer group"
                   >
                     <div className="w-full aspect-[4/3] rounded-md overflow-hidden relative">

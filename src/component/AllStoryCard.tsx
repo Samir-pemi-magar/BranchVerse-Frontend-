@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { FaBookmark, FaRegBookmark } from "react-icons/fa";
+import { FaBookmark, FaRegBookmark, FaHeart, FaRegHeart } from "react-icons/fa";
 import {
   DisableStory,
   DeleteStory,
@@ -32,21 +32,22 @@ interface StoryCardProps {
   handleLikeStory: (id: string) => Promise<void>;
   onDelete?: (id: string) => void;
   onDisable?: (id: string) => void;
+  isLiked?: boolean;
+  isBookmarked?: boolean;
 }
 
 const StoryCard: React.FC<StoryCardProps> = ({
   story,
   currentUserId,
-  handleLikeStory,
   onDelete,
   onDisable,
+  isLiked = false,
+  isBookmarked = false,
 }) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
   const router = useRouter();
-  const [bookmarked, setBookmarked] = useState(false);
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(story.likes);
+  const [bookmarked, setBookmarked] = useState(isBookmarked);
 
   const isAuthor =
     String(currentUserId).trim() === String(story.author._id).trim();
@@ -120,6 +121,7 @@ const StoryCard: React.FC<StoryCardProps> = ({
             src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
             alt={story.title}
             className="absolute inset-0 w-full h-full object-cover z-0"
+            loading="lazy"
           />
 
           {story.branchAllowed && (
@@ -208,18 +210,13 @@ const StoryCard: React.FC<StoryCardProps> = ({
                 <span>{story.views}</span>
               </div>
 
-              <div
-                className={`flex items-center gap-2 text-sm cursor-pointer transition-colors ${
-                  liked ? "text-red-500" : "text-gray-400"
-                }`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLiked((prev) => !prev);
-                  setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-                  handleLikeStory(story._id);
-                }}
-              >
-                {liked ? "❤️" : "🤍"} <span>{likeCount}</span>
+              <div className="flex items-center gap-1.5 text-sm text-gray-500">
+                {isLiked ? (
+                  <FaHeart className="text-red-400" />
+                ) : (
+                  <FaRegHeart className="text-gray-300" />
+                )}
+                <span>{story.likes}</span>
               </div>
 
               <button

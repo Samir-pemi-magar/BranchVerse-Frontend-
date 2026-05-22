@@ -477,7 +477,7 @@ export default function Login() {
               >
                 Don&apos;t have an account?{" "}
                 <Link
-                  href="../Admin/AdminLogin"
+                  href="/auth/Signup"
                   className="text-[#957bda] font-medium no-underline hover:opacity-75 transition-opacity duration-150"
                 >
                   Create one

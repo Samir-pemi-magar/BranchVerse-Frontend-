@@ -71,14 +71,18 @@ export default function Home() {
 
   // Fetch all stories
   useEffect(() => {
+    const id =
+      localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
+    if (id) setCurrentUserId(id);
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     const fetchAllStories = async () => {
       try {
         setLoading(true);
         const data = await GetAllStories();
         if (mounted) setStories(data.stories);
-        const userId = data?.currentUserId;
-        if (userId) setCurrentUserId(userId);
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       } finally {
@@ -126,7 +130,7 @@ export default function Home() {
     const fetchRecommended = async () => {
       try {
         const data = await GetRecommendedStories();
-        setRecommendedStories(data);
+        setRecommendedStories(data.stories ?? []);
       } catch (err) {
         console.error("Failed to fetch recommended stories", err);
       }
@@ -447,6 +451,7 @@ export default function Home() {
                 <div key={story._id} className="min-w-0">
                   <RecommendedStorycard
                     story={story}
+                    currentUserId={currentUserId}
                     handleLikeStory={handleLikeStory}
                   />
                 </div>
