@@ -30,6 +30,7 @@ export default function StoryTitle() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [pendingData, setPendingData] = useState<StoryFormData | null>(null);
   const [customGenre, setCustomGenre] = useState("");
+  const [creating, setCreating] = useState(false); // ← NEW
 
   const addCustomGenre = () => {
     if (!customGenre.trim()) return;
@@ -60,9 +61,12 @@ export default function StoryTitle() {
     pendingData.genre?.forEach((g) => formData.append("genre[]", g));
     formData.append("cover", pendingData.cover[0]);
 
+    setShowConfirm(false); // close modal immediately
+    setCreating(true); // show loading overlay
+
     try {
       const res = await CreateStory(formData);
-      console.log("Full response:", res); // ← add this to see what's returned
+      console.log("Full response:", res);
 
       if (!res.storyId) {
         alert("Story created but no storyId returned. Check console.");
@@ -74,13 +78,25 @@ export default function StoryTitle() {
       console.error("Create story error:", err);
       alert("Failed to create story: " + JSON.stringify(err));
     } finally {
-      setShowConfirm(false);
+      setCreating(false);
       setPendingData(null);
     }
   };
 
   return (
     <>
+      {/* Loading Overlay */}
+      {creating && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl p-8 flex flex-col items-center gap-4 shadow-xl">
+            <div className="w-10 h-10 border-4 border-[#9E77DC] border-t-transparent rounded-full animate-spin" />
+            <p className="font-semibold text-gray-700">
+              Creating your story...
+            </p>
+          </div>
+        </div>
+      )}
+
       <form
         onSubmit={handleSubmit(onSubmit)}
         className="py-8 sm:py-[50px] w-full h-auto bg-white px-4 sm:px-8 md:px-16 lg:px-[140px] flex flex-col items-center"
@@ -88,7 +104,6 @@ export default function StoryTitle() {
         <div className="flex flex-col gap-[26px] w-full">
           <p className="font-semibold text-[20px]">Story Information</p>
 
-          {/* Main layout: stacks on mobile, side-by-side on large screens */}
           <div className="flex flex-col lg:flex-row w-full h-fit gap-y-8 lg:gap-x-[118px]">
             <div className="flex flex-col gap-4 w-full lg:flex-1">
               {/* Story Title */}
@@ -114,7 +129,6 @@ export default function StoryTitle() {
               {/* Tags */}
               <section className="flex flex-col gap-[9px]">
                 <p className="text-[16px] font-semibold">Tags</p>
-
                 <section className="flex flex-row flex-wrap gap-2 items-center">
                   {tags.map((tag, index) => (
                     <p
@@ -124,7 +138,6 @@ export default function StoryTitle() {
                       #{tag}
                     </p>
                   ))}
-
                   <input
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
@@ -140,7 +153,6 @@ export default function StoryTitle() {
               {/* Genre */}
               <section className="flex flex-col gap-[9px]">
                 <p className="font-semibold text-[15px]">Genre</p>
-
                 <div className="flex flex-row gap-4 flex-wrap">
                   {["Fantasy", "Romance", "Sci-Fi", "Horror", "Mystery"].map(
                     (g) => (
@@ -155,7 +167,6 @@ export default function StoryTitle() {
                     ),
                   )}
                 </div>
-
                 <div className="flex flex-col gap-1 mt-2">
                   <p className="text-[14px] font-medium">Other Genre</p>
                   <input
@@ -178,7 +189,6 @@ export default function StoryTitle() {
             {/* Cover */}
             <div className="flex flex-col gap-[9px] w-full lg:w-auto">
               <p className="text-[15px] font-semibold">Story Cover</p>
-
               <input
                 type="file"
                 accept="image/*"
@@ -186,7 +196,6 @@ export default function StoryTitle() {
                 className="hidden"
                 id="coverInput"
               />
-
               {watch("cover") && watch("cover").length > 0 ? (
                 <img
                   src={URL.createObjectURL(watch("cover")[0])}
@@ -214,15 +223,12 @@ export default function StoryTitle() {
         {/* Branch */}
         <div className="w-full h-auto flex flex-col gap-6 mt-12 p-4 sm:p-6 bg-[#F9F7FD] rounded-xl shadow-sm">
           <p className="font-bold text-xl text-[#4B3E8B]">Branching Option</p>
-
           <div className="flex flex-col gap-4">
             <p className="font-semibold text-base text-gray-700">
               This story is the main branch
             </p>
-
             <section className="flex flex-col gap-2">
               <p className="text-sm font-medium text-gray-600">Parent Story</p>
-
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="px-4 py-2 bg-[#9E77DC] rounded-full text-white font-semibold text-sm">
                   Origin
@@ -254,12 +260,10 @@ export default function StoryTitle() {
             <h2 className="text-[18px] font-semibold text-center">
               Branching Option
             </h2>
-
             <p className="text-[14px] text-center text-gray-600">
               Do you want to allow other users to create branches from this
               story?
             </p>
-
             <div className="flex justify-end gap-3 mt-4">
               <button
                 onClick={() => submitStory(true)}
@@ -267,7 +271,6 @@ export default function StoryTitle() {
               >
                 Yes, Allow
               </button>
-
               <button
                 onClick={() => submitStory(false)}
                 className="px-4 py-1.5 rounded-md border border-gray-300 text-gray-700 hover:bg-gray-100"
