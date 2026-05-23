@@ -1,12 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { GetDashboardStats, DashboardStats } from "@/src/Services/adminApi";
-import {
-  RadialBarChart,
-  RadialBar,
-  ResponsiveContainer,
-  Tooltip,
-} from "recharts";
+import { RadialBarChart, RadialBar, Tooltip } from "recharts";
 
 const formatCount = (n: number): string => {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -130,11 +125,25 @@ const CustomTooltip = ({ active, payload }: CustomTooltipProps) => {
 export default function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [error, setError] = useState("");
+  const [chartSize, setChartSize] = useState(160); // Default mobile size (w-40)
 
   useEffect(() => {
     GetDashboardStats()
       .then(setStats)
       .catch(() => setError("Failed to load stats."));
+
+    // Sync chart width to window media query since we dropped ResponsiveContainer
+    const handleResize = () => {
+      if (window.innerWidth >= 640) {
+        setChartSize(192); // sm:w-48
+      } else {
+        setChartSize(160); // w-40
+      }
+    };
+
+    handleResize();
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
   }, []);
 
   const radialData = stats
@@ -257,7 +266,7 @@ export default function DashboardPage() {
             </div>
           </section>
 
-          {/* Chapters — 2-col on mobile, 3-col on sm+ */}
+          {/* Chapters */}
           <section>
             <p className="text-[10px] tracking-widest text-neutral-600 uppercase mb-3">
               Chapters
@@ -278,7 +287,6 @@ export default function DashboardPage() {
                 icon="🔒"
                 color="#60a5fa"
               />
-              {/* Full-width on mobile when it's the odd card out */}
               <div className="col-span-2 sm:col-span-1">
                 <MetricCard
                   label="Branches"
@@ -303,28 +311,30 @@ export default function DashboardPage() {
                 </p>
               </div>
 
-              {/* Stack vertically on mobile, side-by-side on sm+ */}
               <div className="flex flex-col sm:flex-row items-center gap-6">
-                {/* Radial chart */}
-                <div className="w-40 h-40 sm:w-48 sm:h-48 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <RadialBarChart
-                      cx="50%"
-                      cy="50%"
-                      innerRadius="30%"
-                      outerRadius="90%"
-                      data={radialData}
-                      startAngle={90}
-                      endAngle={-270}
-                    >
-                      <RadialBar
-                        dataKey="pct"
-                        background={{ fill: "#262626" }}
-                        cornerRadius={4}
-                      />
-                      <Tooltip content={<CustomTooltip />} />
-                    </RadialBarChart>
-                  </ResponsiveContainer>
+                {/* Fixed explicitly calculated container sizes to stop Recharts layout engine warnings */}
+                <div
+                  className="shrink-0 flex items-center justify-center"
+                  style={{ width: chartSize, height: chartSize }}
+                >
+                  <RadialBarChart
+                    width={chartSize}
+                    height={chartSize}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius="30%"
+                    outerRadius="90%"
+                    data={radialData}
+                    startAngle={90}
+                    endAngle={-270}
+                  >
+                    <RadialBar
+                      dataKey="pct"
+                      background={{ fill: "#262626" }}
+                      cornerRadius={4}
+                    />
+                    <Tooltip content={<CustomTooltip />} />
+                  </RadialBarChart>
                 </div>
 
                 {/* Legend + progress bars */}

@@ -8,6 +8,7 @@ const NAV = [
   { href: "/Admin/Users", label: "Users" },
   { href: "/Admin/Stories", label: "Stories" },
   { href: "/Admin/Chapters", label: "Chapters" },
+  { href: "/Admin/SupportMessage", label: "Support Messages" }, // Added here
 ];
 
 export default function AdminLayout({
