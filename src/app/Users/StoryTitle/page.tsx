@@ -5,6 +5,7 @@ import { useForm } from "react-hook-form";
 import { useState } from "react";
 import { CreateStory } from "@/src/Services/storyApi";
 import { useRouter } from "next/navigation";
+import imageCompression from "browser-image-compression";
 
 export interface StoryFormData {
   title: string;
@@ -59,7 +60,12 @@ export default function StoryTitle() {
     formData.append("branchAllowed", String(isBranchable));
     pendingData.tags.forEach((tag) => formData.append("tags[]", tag));
     pendingData.genre?.forEach((g) => formData.append("genre[]", g));
-    formData.append("cover", pendingData.cover[0]);
+    const compressed = await imageCompression(pendingData.cover[0], {
+      maxSizeMB: 0.5, // max 500KB
+      maxWidthOrHeight: 800, // resize to max 800px
+      useWebWorker: true,
+    });
+    formData.append("cover", compressed);
 
     setShowConfirm(false); // close modal immediately
     setCreating(true); // show loading overlay
