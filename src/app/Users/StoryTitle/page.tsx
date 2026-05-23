@@ -56,18 +56,23 @@ export default function StoryTitle() {
     formData.append("title", pendingData.title);
     formData.append("description", pendingData.description || "");
     formData.append("branchAllowed", String(isBranchable));
-
     pendingData.tags.forEach((tag) => formData.append("tags[]", tag));
     pendingData.genre?.forEach((g) => formData.append("genre[]", g));
-
     formData.append("cover", pendingData.cover[0]);
 
     try {
       const res = await CreateStory(formData);
-      console.log("Story created:", res.storyId);
+      console.log("Full response:", res); // ← add this to see what's returned
+
+      if (!res.storyId) {
+        alert("Story created but no storyId returned. Check console.");
+        return;
+      }
+
       router.push(`/Users/Storycreate?storyId=${res.storyId}`);
     } catch (err) {
-      console.error(err);
+      console.error("Create story error:", err);
+      alert("Failed to create story: " + JSON.stringify(err));
     } finally {
       setShowConfirm(false);
       setPendingData(null);
