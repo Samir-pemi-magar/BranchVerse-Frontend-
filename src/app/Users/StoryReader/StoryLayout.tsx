@@ -2,7 +2,7 @@
 import StoryReaderSidebar from "@/src/component/StoryReaderSidebar";
 import StoryReaderComponent from "@/src/component/StoryReader";
 import { GetChapter } from "@/src/Services/storyApi";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { coverUrl } from "../../../../Utils/coverUrl";
 
 export interface Chapter {
@@ -34,15 +34,14 @@ export default function StoryLayout({ storyId, chapterId }: LayoutProps) {
   const [chapterContent, setChapterContent] = useState<Chapter | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const hasFetched = useRef(false); // ← add this
 
   useEffect(() => {
     if (!storyId || !chapterId) return;
-    if (hasFetched.current) return; // ← block second Strict Mode call
-    hasFetched.current = true; // ← mark as fetched
 
     const fetchChapter = async () => {
       try {
+        setChapterContent(null);
+        setError(null);
         const chapter = await GetChapter(storyId, chapterId);
         if (!chapter) {
           setError("Chapter not found");

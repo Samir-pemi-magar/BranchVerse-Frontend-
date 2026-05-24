@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { FaBookmark, FaRegBookmark, FaHeart, FaEye } from "react-icons/fa";
 import {
@@ -41,6 +41,7 @@ const StoryCard: React.FC<StoryCardProps> = ({
   const [reportOpen, setReportOpen] = useState(false);
   const [bookmarked, setBookmarked] = useState(isBookmarked);
   const router = useRouter();
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isAuthor =
     String(currentUserId).trim() === String(story.author._id).trim();
@@ -54,9 +55,22 @@ const StoryCard: React.FC<StoryCardProps> = ({
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
   };
+
   useEffect(() => {
     setBookmarked(isBookmarked);
   }, [isBookmarked]);
+
+  // ── Close menu when clicking outside ──
+  useEffect(() => {
+    if (!menuOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -139,13 +153,14 @@ const StoryCard: React.FC<StoryCardProps> = ({
         }
 
         .sc-menu-btn {
-          position: absolute; top: 10px; right: 10px; z-index: 20;
           width: 30px; height: 30px; border-radius: 8px;
           display: flex; align-items: center; justify-content: center;
           background: rgba(0,0,0,0.55); backdrop-filter: blur(4px);
           color: white; font-size: 18px; font-weight: 700; line-height: 1;
           border: 0.5px solid rgba(255,255,255,0.15);
           transition: background 0.15s;
+          position: relative;
+          z-index: 40;
         }
         .sc-menu-btn:hover { background: rgba(0,0,0,0.75); }
 
@@ -179,26 +194,24 @@ const StoryCard: React.FC<StoryCardProps> = ({
         .sc-body { padding: 14px 16px 16px; display: flex; flex-direction: column; flex: 1; }
 
         .sc-title {
-  font-family: 'Playfair Display', serif;
-  font-weight: 700; font-size: 16px; line-height: 1.35;
-  color: white;
-  /* Crucial trio for clamping */
-  display: -webkit-box; 
-  -webkit-line-clamp: 2; 
-  -webkit-box-orient: vertical; 
-  overflow: hidden;
-}
+          font-family: 'Playfair Display', serif;
+          font-weight: 700; font-size: 16px; line-height: 1.35;
+          color: white;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
         .sc-meta { font-size: 12px; margin-top: 4px; color: rgba(255,255,255,0.35); }
 
         .sc-desc {
-  font-size: 12px; line-height: 1.5; margin-top: 8px;
-  color: rgba(255,255,255,0.4);
-  /* Added display property here to make clamp work */
-  display: -webkit-box; 
-  -webkit-line-clamp: 3; 
-  -webkit-box-orient: vertical; 
-  overflow: hidden;
-}
+          font-size: 12px; line-height: 1.5; margin-top: 8px;
+          color: rgba(255,255,255,0.4);
+          display: -webkit-box;
+          -webkit-line-clamp: 3;
+          -webkit-box-orient: vertical;
+          overflow: hidden;
+        }
 
         .sc-footer { margin-top: auto; padding-top: 12px; display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
 
@@ -246,19 +259,21 @@ const StoryCard: React.FC<StoryCardProps> = ({
             <span className="sc-branch-badge">Branchable</span>
           )}
 
-          {/* Menu */}
-          <div style={{ position: "absolute", top: 10, right: 10, zIndex: 30 }}>
+          {/* Menu — ref wraps both button and dropdown so click-outside works */}
+          <div
+            ref={menuRef}
+            style={{ position: "absolute", top: 10, right: 10, zIndex: 30 }}
+            onClick={(e) => e.stopPropagation()}
+          >
             <button
               className="sc-menu-btn"
-              onClick={(e) => {
-                e.stopPropagation();
-                setMenuOpen((p) => !p);
-              }}
+              onClick={() => setMenuOpen((p) => !p)}
+              aria-label="Story options"
             >
               ⋮
             </button>
             {menuOpen && (
-              <div className="sc-dropdown" onClick={(e) => e.stopPropagation()}>
+              <div className="sc-dropdown">
                 {isAuthor ? (
                   <>
                     <button
@@ -313,19 +328,16 @@ const StoryCard: React.FC<StoryCardProps> = ({
           {/* Footer */}
           <div className="sc-footer">
             <div className="sc-stat-row">
-              {/* Views */}
               <span className="sc-stat">
                 <FaEye style={{ color: "rgba(255,255,255,0.3)" }} />
                 {story.views}
               </span>
-              {/* Total Likes */}
               <span className="sc-stat">
                 <FaHeart
                   style={{ color: "rgba(255,255,255,0.3)", fontSize: 11 }}
                 />
                 {story.likes}
               </span>
-              {/* Branches */}
               <span
                 className="sc-stat"
                 style={{ color: "rgba(255,255,255,0.35)" }}
@@ -335,7 +347,6 @@ const StoryCard: React.FC<StoryCardProps> = ({
             </div>
 
             <div style={{ display: "flex", gap: "6px" }}>
-              {/* Bookmark */}
               <button
                 type="button"
                 onClick={handleBookmark}

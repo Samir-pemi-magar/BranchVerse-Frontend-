@@ -10,7 +10,7 @@ import {
   GetRecommendedStories,
   GetFilteredStories,
 } from "@/src/Services/storyApi";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
@@ -35,6 +35,7 @@ interface Story {
 }
 
 const presetTags = ["Fantasy", "Romance", "Adventure", "Horror", "Sci-Fi"];
+const STORIES_PER_PAGE = 9;
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -65,38 +66,61 @@ export default function StoryExplorer() {
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     undefined,
   );
+  const [isFiltered, setIsFiltered] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const searchParams = useSearchParams();
   const search = searchParams.get("search") ?? "";
 
-  // Auth User ID
+  // ── Auth User ID ──
   useEffect(() => {
     const id =
       localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
     if (id) setCurrentUserId(id);
   }, []);
 
-  // Base Fetch
-  useEffect(() => {
-    let mounted = true;
-    const fetchAllStories = async () => {
-      try {
-        setLoading(true);
-        const data = await GetAllStories();
-        if (mounted) setStories(data.stories || []);
-      } catch (err) {
-        console.error("Failed to fetch all stories", err);
-      } finally {
-        if (mounted) setLoading(false);
-      }
-    };
-    fetchAllStories();
-    return () => {
-      mounted = false;
-    };
+  // ── Individual fetch functions ──
+  const fetchAllStories = useCallback(async () => {
+    try {
+      setLoading(true);
+      const data = await GetAllStories();
+      setStories(data.stories || []);
+    } catch (err) {
+      console.error("Failed to fetch all stories", err);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Get User Preferences
+  const fetchTrending = useCallback(async () => {
+    try {
+      const data = await GetTrendingStories();
+      setTrendingStories(Array.isArray(data) ? data.slice(0, 5) : []);
+    } catch (err) {
+      console.error("Failed to fetch trending stories", err);
+    }
+  }, []);
+
+  // ── Initial load + poll every 15s + refetch on tab focus ──
+  useEffect(() => {
+    fetchAllStories();
+    fetchTrending();
+
+    const refresh = () => {
+      if (!isFiltered) fetchAllStories();
+      fetchTrending();
+    };
+
+    const interval = setInterval(refresh, 15_000);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [fetchAllStories, fetchTrending, isFiltered]);
+
+  // ── Preferences (runs once) ──
   useEffect(() => {
     const fetchPreferences = async () => {
       const token = localStorage.getItem("token");
@@ -111,51 +135,46 @@ export default function StoryExplorer() {
     fetchPreferences();
   }, []);
 
-  // Get Trending
-  useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const data = await GetTrendingStories();
-        setTrendingStories(Array.isArray(data) ? data.slice(0, 5) : []);
-      } catch (err) {
-        console.error("Failed to fetch trending stories", err);
-      }
-    };
-    fetchTrending();
-  }, []);
-
-  // Get Recommendations based on Preferences
+  // ── Preference-dependent fetches + poll ──
   useEffect(() => {
     if (preferences.length === 0) return;
-    let mounted = true;
 
-    const fetchRecommendedData = async () => {
+    const fetchRecommended = async () => {
       try {
         const data = await GetRecommendedStories();
-        if (mounted) setRecommendedStories(data.stories ?? []);
+        setRecommendedStories(data.stories ?? []);
       } catch (err) {
         console.error("Failed to fetch recommended stories", err);
       }
     };
 
-    const fetchPersonalizedData = async () => {
+    const fetchPersonalized = async () => {
       try {
         const data = await GetPersonalizedStories();
-        if (mounted) setPersonalizedStories(data ?? []);
+        setPersonalizedStories(data ?? []);
       } catch (err) {
         console.error("Failed to fetch personalized stories", err);
       }
     };
 
-    fetchRecommendedData();
-    fetchPersonalizedData();
+    fetchRecommended();
+    fetchPersonalized();
+
+    const refresh = () => {
+      fetchRecommended();
+      fetchPersonalized();
+    };
+
+    const interval = setInterval(refresh, 15_000);
+    window.addEventListener("focus", refresh);
 
     return () => {
-      mounted = false;
+      clearInterval(interval);
+      window.removeEventListener("focus", refresh);
     };
   }, [preferences]);
 
-  // Carousel Interval
+  // ── Trending carousel auto-rotate ──
   useEffect(() => {
     if (trendingStories.length === 0) return;
     const interval = setInterval(() => {
@@ -163,6 +182,11 @@ export default function StoryExplorer() {
     }, 4000);
     return () => clearInterval(interval);
   }, [trendingStories]);
+
+  // Reset to page 1 whenever search or stories change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search, stories]);
 
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
@@ -177,6 +201,8 @@ export default function StoryExplorer() {
       if (customTag.trim()) allTags.push(customTag.trim());
       const filtered = await GetFilteredStories(allTags);
       setStories(filtered || []);
+      setIsFiltered(true);
+      setCurrentPage(1);
       setShowFilter(false);
     } catch (err) {
       console.error("Failed to fetch filtered stories", err);
@@ -189,28 +215,67 @@ export default function StoryExplorer() {
     setSelectedTags([]);
     setCustomTag("");
     setShowFilter(false);
-    setLoading(true);
-    try {
-      const data = await GetAllStories();
-      setStories(data.stories || []);
-    } catch (err) {
-      console.error("Failed to fetch all stories", err);
-    } finally {
-      setLoading(false);
-    }
+    setIsFiltered(false);
+    setCurrentPage(1);
+    await fetchAllStories();
   };
 
+  // ── Filtered + searched stories ──
   const visibleStories = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return stories;
     return stories.filter(
       (s) =>
-        s.title.toLowerCase().includes(q) ||
-        s.description.toLowerCase().includes(q) ||
-        s.tags.some((t) => t.toLowerCase().includes(q)) ||
-        s.author.username.toLowerCase().includes(q),
+        (s.title?.toLowerCase() ?? "").includes(q) ||
+        (s.description?.toLowerCase() ?? "").includes(q) ||
+        (s.tags ?? []).some((t) => t?.toLowerCase().includes(q)) ||
+        (s.author?.username?.toLowerCase() ?? "").includes(q),
     );
   }, [stories, search]);
+
+  // ── Pagination ──
+  const totalPages = Math.ceil(visibleStories.length / STORIES_PER_PAGE);
+  const paginatedStories = useMemo(() => {
+    const start = (currentPage - 1) * STORIES_PER_PAGE;
+    return visibleStories.slice(start, start + STORIES_PER_PAGE);
+  }, [visibleStories, currentPage]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    document
+      .getElementById("all-stories")
+      ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
+  const pageNumbers = useMemo(() => {
+    if (totalPages <= 7)
+      return Array.from({ length: totalPages }, (_, i) => i + 1);
+    const pages: (number | "...")[] = [];
+    if (currentPage <= 4) {
+      pages.push(1, 2, 3, 4, 5, "...", totalPages);
+    } else if (currentPage >= totalPages - 3) {
+      pages.push(
+        1,
+        "...",
+        totalPages - 4,
+        totalPages - 3,
+        totalPages - 2,
+        totalPages - 1,
+        totalPages,
+      );
+    } else {
+      pages.push(
+        1,
+        "...",
+        currentPage - 1,
+        currentPage,
+        currentPage + 1,
+        "...",
+        totalPages,
+      );
+    }
+    return pages;
+  }, [currentPage, totalPages]);
 
   return (
     <>
@@ -307,12 +372,46 @@ export default function StoryExplorer() {
           100% { background-position: -200% 0; }
         }
 
+        /* ── Community scroll: full-bleed with visible overflow ── */
+        .community-scroll-wrapper {
+          /* Negative margin breaks out of parent padding */
+          margin-left: -1rem;
+          margin-right: -1rem;
+        }
+        @media (min-width: 640px) {
+          .community-scroll-wrapper {
+            margin-left: -1.5rem;
+            margin-right: -1.5rem;
+          }
+        }
+        @media (min-width: 1024px) {
+          .community-scroll-wrapper {
+            margin-left: -2rem;
+            margin-right: -2rem;
+          }
+        }
+
         .community-scroll {
           display: flex;
           gap: 16px;
           overflow-x: auto;
-          padding-bottom: 8px;
+          padding-bottom: 12px;
+          /* Match parent padding so first card aligns with content */
+          padding-left: 1rem;
+          padding-right: 1rem;
           scrollbar-width: none;
+        }
+        @media (min-width: 640px) {
+          .community-scroll {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+          }
+        }
+        @media (min-width: 1024px) {
+          .community-scroll {
+            padding-left: 2rem;
+            padding-right: 2rem;
+          }
         }
         .community-scroll::-webkit-scrollbar { display: none; }
 
@@ -330,6 +429,49 @@ export default function StoryExplorer() {
           background: rgba(255,255,255,0.06);
           border-color: rgba(21,176,183,0.3);
           transform: translateY(-3px);
+        }
+
+        /* ── Pagination ── */
+        .page-btn {
+          min-width: 36px;
+          height: 36px;
+          padding: 0 6px;
+          border-radius: 10px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          background: rgba(255,255,255,0.04);
+          border: 0.5px solid rgba(255,255,255,0.08);
+          color: rgba(255,255,255,0.45);
+          transition: all 0.15s;
+          cursor: pointer;
+        }
+        .page-btn:hover:not(:disabled) {
+          background: rgba(255,255,255,0.09);
+          border-color: rgba(255,255,255,0.16);
+          color: rgba(255,255,255,0.85);
+        }
+        .page-btn.active {
+          background: linear-gradient(130deg, #6c4ef2, #15b0b7);
+          border-color: transparent;
+          color: white;
+        }
+        .page-btn:disabled {
+          opacity: 0.3;
+          cursor: not-allowed;
+        }
+        .page-ellipsis {
+          min-width: 36px;
+          height: 36px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 13px;
+          color: rgba(255,255,255,0.25);
+          font-family: 'DM Sans', sans-serif;
         }
       `}</style>
 
@@ -378,7 +520,7 @@ export default function StoryExplorer() {
         </div>
         <div className="noise fixed inset-0 z-[1] opacity-[0.03] pointer-events-none" />
 
-        <div className="relative z-[2] pt-[70px] sm:pt-[90px] w-full">
+        <div className="relative z-[2] pt-[20px] sm:pt-[30px] w-full">
           <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
             {/* ── Header ── */}
             <div className="fade-up relative z-50 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between py-6 sm:py-10">
@@ -547,7 +689,7 @@ export default function StoryExplorer() {
                           views
                         </p>
                         <p
-                          className="hidden sm:block text-sm mt-2 line-clamp-3 text-ellipsis"
+                          className="hidden sm:block text-sm mt-2 line-clamp-3"
                           style={{
                             color: "rgba(255,255,255,0.4)",
                             display: "-webkit-box",
@@ -561,7 +703,6 @@ export default function StoryExplorer() {
                     </div>
                   </Link>
 
-                  {/* Arrow Controls */}
                   <div className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10">
                     <button
                       onClick={(e) => {
@@ -601,7 +742,6 @@ export default function StoryExplorer() {
                     </button>
                   </div>
 
-                  {/* Indicator Dots */}
                   <div className="absolute bottom-4 right-6 flex gap-1.5 z-10">
                     {trendingStories.map((_, i) => (
                       <button
@@ -626,6 +766,7 @@ export default function StoryExplorer() {
             {/* ── Community Highlights ── */}
             {recommendedStories.length > 0 && (
               <div className="mt-12 sm:mt-16">
+                {/* Header stays inside the padded container */}
                 <div className="flex items-end justify-between mb-6">
                   <div>
                     <span className="section-label">Community Highlights</span>
@@ -641,80 +782,83 @@ export default function StoryExplorer() {
                   </span>
                 </div>
 
-                <div className="community-scroll">
-                  {recommendedStories.map((story) => {
-                    const src = story.cover
-                      ? story.cover.startsWith("http")
-                        ? story.cover
-                        : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
-                      : undefined;
-                    return (
-                      <Link
-                        key={story._id}
-                        href={`/Users/StoryPreview?id=${story._id}`}
-                        className="community-card"
-                      >
-                        <div className="relative h-[160px] w-full">
-                          {src ? (
-                            <img
-                              src={src}
-                              alt={story.title}
-                              className="w-full h-full object-cover"
-                              loading="lazy"
-                            />
-                          ) : (
+                {/* Scroll wrapper bleeds outside the max-width container padding */}
+                <div className="community-scroll-wrapper">
+                  <div className="community-scroll">
+                    {recommendedStories.map((story) => {
+                      const src = story.cover
+                        ? story.cover.startsWith("http")
+                          ? story.cover
+                          : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                        : undefined;
+                      return (
+                        <Link
+                          key={story._id}
+                          href={`/Users/StoryPreview?id=${story._id}`}
+                          className="community-card"
+                        >
+                          <div className="relative h-[160px] w-full">
+                            {src ? (
+                              <img
+                                src={src}
+                                alt={story.title}
+                                className="w-full h-full object-cover"
+                                loading="lazy"
+                              />
+                            ) : (
+                              <div
+                                className="skeleton-pulse w-full h-full"
+                                style={{ borderRadius: 0 }}
+                              />
+                            )}
                             <div
-                              className="skeleton-pulse w-full h-full"
-                              style={{ borderRadius: 0 }}
-                            />
-                          )}
-                          <div
-                            className="absolute inset-0"
-                            style={{
-                              background:
-                                "linear-gradient(to top, rgba(13,13,18,0.85) 0%, transparent 60%)",
-                            }}
-                          />
-                          {story.branchAllowed && (
-                            <div
-                              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-white text-[10px] font-semibold"
+                              className="absolute inset-0"
                               style={{
                                 background:
-                                  "linear-gradient(130deg,#6c4ef2,#15b0b7)",
+                                  "linear-gradient(to top, rgba(13,13,18,0.85) 0%, transparent 60%)",
                               }}
-                            >
-                              Branchable
-                            </div>
-                          )}
-                        </div>
-                        <div className="p-3">
-                          <p className="font-playfair font-bold text-white text-sm line-clamp-2 leading-snug">
-                            {story.title}
-                          </p>
-                          <p
-                            className="text-xs mt-1"
-                            style={{ color: "rgba(255,255,255,0.4)" }}
-                          >
-                            by {story.author.username}
-                          </p>
-                          <div
-                            className="flex items-center gap-3 mt-2 text-xs"
-                            style={{ color: "rgba(255,255,255,0.35)" }}
-                          >
-                            <span>👁 {story.views}</span>
-                            <span>❤ {story.likes}</span>
-                            <span>⎇ {story.branchesCount}</span>
+                            />
+                            {story.branchAllowed && (
+                              <div
+                                className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-white text-[10px] font-semibold"
+                                style={{
+                                  background:
+                                    "linear-gradient(130deg,#6c4ef2,#15b0b7)",
+                                }}
+                              >
+                                Branchable
+                              </div>
+                            )}
                           </div>
-                        </div>
-                      </Link>
-                    );
-                  })}
+                          <div className="p-3">
+                            <p className="font-playfair font-bold text-white text-sm line-clamp-2 leading-snug">
+                              {story.title}
+                            </p>
+                            <p
+                              className="text-xs mt-1"
+                              style={{ color: "rgba(255,255,255,0.4)" }}
+                            >
+                              by {story.author.username}
+                            </p>
+                            <div
+                              className="flex items-center gap-3 mt-2 text-xs"
+                              style={{ color: "rgba(255,255,255,0.35)" }}
+                            >
+                              <span>👁 {story.views}</span>
+                              <span>❤ {story.likes}</span>
+                              <span>⎇ {story.branchesCount}</span>
+                            </div>
+                          </div>
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
 
             {/* ── All Stories Grid ── */}
-            <div className="mt-12 sm:mt-16 pb-12 sm:pb-16">
+            <div id="all-stories" className="mt-12 sm:mt-16 pb-12 sm:pb-16">
               <div className="flex items-end justify-between mb-6 sm:mb-8">
                 <div>
                   <span className="section-label">Browse</span>
@@ -728,12 +872,21 @@ export default function StoryExplorer() {
                 >
                   {visibleStories.length}{" "}
                   {visibleStories.length === 1 ? "story" : "stories"}
+                  {isFiltered && (
+                    <span style={{ color: "#15b0b7" }}> · filtered</span>
+                  )}
+                  {totalPages > 1 && (
+                    <span>
+                      {" "}
+                      · page {currentPage}/{totalPages}
+                    </span>
+                  )}
                 </p>
               </div>
 
               {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {Array.from({ length: 6 }).map((_, i) => (
+                  {Array.from({ length: STORIES_PER_PAGE }).map((_, i) => (
                     <div
                       key={i}
                       className="skeleton-pulse h-[300px] sm:h-[340px]"
@@ -759,13 +912,83 @@ export default function StoryExplorer() {
                   </p>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {visibleStories.map((story) => (
-                    <div key={story._id} className="min-w-0">
-                      <StoryCard story={story} currentUserId={currentUserId} />
+                <>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {paginatedStories.map((story) => (
+                      <div key={story._id} className="min-w-0">
+                        <StoryCard
+                          story={story}
+                          currentUserId={currentUserId}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ── Pagination Controls ── */}
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-center gap-1.5 mt-10 flex-wrap">
+                      <button
+                        className="page-btn"
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        aria-label="Previous page"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M15 18l-6-6 6-6" />
+                        </svg>
+                      </button>
+
+                      {pageNumbers.map((page, i) =>
+                        page === "..." ? (
+                          <span key={`ellipsis-${i}`} className="page-ellipsis">
+                            …
+                          </span>
+                        ) : (
+                          <button
+                            key={page}
+                            className={`page-btn ${currentPage === page ? "active" : ""}`}
+                            onClick={() => goToPage(page as number)}
+                            aria-label={`Page ${page}`}
+                            aria-current={
+                              currentPage === page ? "page" : undefined
+                            }
+                          >
+                            {page}
+                          </button>
+                        ),
+                      )}
+
+                      <button
+                        className="page-btn"
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        aria-label="Next page"
+                      >
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M9 18l6-6-6-6" />
+                        </svg>
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           </div>

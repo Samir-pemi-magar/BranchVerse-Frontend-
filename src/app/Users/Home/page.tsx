@@ -10,7 +10,7 @@ import {
   GetRecommendedStories,
   LikeStory,
 } from "@/src/Services/storyApi";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import RecommendedStorycard from "@/src/component/RecommendedStorycard";
 import Link from "next/link";
@@ -75,63 +75,105 @@ export default function Home() {
   const [topWriters, setTopWriters] = useState<TopWriter[]>([]);
   const [topStories, setTopStories] = useState<Story[]>([]);
 
+  // ── Individual fetch functions (defined once, reusable) ──
+  const fetchAllStories = useCallback(async () => {
+    try {
+      const data = await GetAllStories();
+      setStories(data.stories);
+    } catch (err) {
+      console.error("Failed to fetch all stories", err);
+    }
+  }, []);
+
+  const fetchPopular = useCallback(async () => {
+    try {
+      const data = await GetPopularThisWeek();
+      setPopularStories(data.slice(0, 5));
+    } catch (err) {
+      console.error("Failed to fetch popular stories", err);
+    }
+  }, []);
+
+  const fetchBookmarks = useCallback(async () => {
+    try {
+      const data = await GetAllBookmarks();
+      setBookmarkedStories(data.stories || []);
+    } catch (err) {
+      console.error("Failed to fetch bookmarks", err);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  const fetchTopWriters = useCallback(async () => {
+    try {
+      const data = await GetTopWriters();
+      setTopWriters(data);
+    } catch (err) {
+      console.error("Failed to fetch top writers", err);
+    }
+  }, []);
+
+  const fetchTopStories = useCallback(async () => {
+    try {
+      const data = await GetTopStories();
+      setTopStories(data);
+    } catch (err) {
+      console.error("Failed to fetch top stories", err);
+    }
+  }, []);
+
+  const fetchTrending = useCallback(async () => {
+    try {
+      const data = await GetTrendingStories();
+      setTrendingStories(data.slice(0, 5));
+    } catch (err) {
+      console.error("Failed to fetch trending stories", err);
+    }
+  }, []);
+
+  // ── Auth user ID ──
   useEffect(() => {
     const id =
       localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
     if (id) setCurrentUserId(id);
   }, []);
 
+  // ── Initial load + poll every 15s + refetch on tab focus ──
   useEffect(() => {
-    const fetchAllStories = async () => {
-      try {
-        const data = await GetAllStories();
-        setStories(data.stories);
-      } catch (err) {
-        console.error("Failed to fetch all stories", err);
-      }
-    };
-    const fetchPopular = async () => {
-      try {
-        const data = await GetPopularThisWeek();
-        setPopularStories(data.slice(0, 5));
-      } catch (err) {
-        console.error("Failed to fetch popular stories", err);
-      }
-    };
-    const fetchBookmarks = async () => {
-      try {
-        const data = await GetAllBookmarks();
-        setBookmarkedStories(data.stories || []);
-      } catch (err) {
-        console.error("Failed to fetch bookmarks", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    const fetchTopWriters = async () => {
-      try {
-        const data = await GetTopWriters();
-        setTopWriters(data);
-      } catch (err) {
-        console.error("Failed to fetch top writers", err);
-      }
-    };
-    const fetchTopStories = async () => {
-      try {
-        const data = await GetTopStories();
-        setTopStories(data);
-      } catch (err) {
-        console.error("Failed to fetch top stories", err);
-      }
-    };
-
+    fetchAllStories();
+    fetchPopular();
+    fetchBookmarks();
     fetchTopWriters();
     fetchTopStories();
-    fetchBookmarks();
-    fetchPopular();
-    fetchAllStories();
-  }, []);
+    fetchTrending();
 
+    const refresh = () => {
+      fetchAllStories();
+      fetchPopular();
+      fetchBookmarks();
+      fetchTopWriters();
+      fetchTopStories();
+      fetchTrending();
+    };
+
+    const interval = setInterval(refresh, 15_000);
+    window.addEventListener("focus", refresh);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refresh);
+    };
+  }, [
+    fetchAllStories,
+    fetchPopular,
+    fetchBookmarks,
+    fetchTopWriters,
+    fetchTopStories,
+    fetchTrending,
+  ]);
+
+  // ── Preferences (runs once) ──
   useEffect(() => {
     const fetchPreferences = async () => {
       try {
@@ -146,19 +188,10 @@ export default function Home() {
     fetchPreferences();
   }, []);
 
+  // ── Preference-dependent fetches ──
   useEffect(() => {
-    const fetchTrending = async () => {
-      try {
-        const data = await GetTrendingStories();
-        setTrendingStories(data.slice(0, 5));
-      } catch (err) {
-        console.error("Failed to fetch trending stories", err);
-      }
-    };
-    fetchTrending();
-  }, []);
+    if (preferences.length === 0) return;
 
-  useEffect(() => {
     const fetchRecommended = async () => {
       try {
         const data = await GetRecommendedStories();
@@ -167,6 +200,7 @@ export default function Home() {
         console.error("Failed to fetch recommended stories", err);
       }
     };
+
     const fetchPersonalized = async () => {
       try {
         const data = await GetPersonalizedStories();
@@ -175,12 +209,25 @@ export default function Home() {
         console.error("Failed to fetch personalized stories", err);
       }
     };
-    if (preferences.length > 0) {
+
+    fetchRecommended();
+    fetchPersonalized();
+
+    const refreshPersonalized = () => {
       fetchRecommended();
       fetchPersonalized();
-    }
+    };
+
+    const interval = setInterval(refreshPersonalized, 15_000);
+    window.addEventListener("focus", refreshPersonalized);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", refreshPersonalized);
+    };
   }, [preferences]);
 
+  // ── Trending carousel auto-rotate ──
   useEffect(() => {
     if (trendingStories.length === 0) return;
     const interval = setInterval(() => {
@@ -198,6 +245,7 @@ export default function Home() {
     );
   };
 
+  // ── Story carousel auto-scroll ──
   useEffect(() => {
     const scroller = scrollerRef.current;
     if (!scroller || stories.length === 0) return;
