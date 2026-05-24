@@ -4,6 +4,7 @@ import toast from "react-hot-toast";
 import { signup as signupApi } from "@/src/Services/authapi";
 import Link from "next/link";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface SignupFormData {
   username: string;
@@ -22,6 +23,8 @@ export default function Signup() {
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  // inside component:
+  const router = useRouter();
 
   const password = watch("password", "");
 
@@ -48,13 +51,19 @@ export default function Signup() {
         password: data.password,
       });
       if (res.status === 201) {
-        toast.success("Signup successful!", { id: toastId });
+        toast.success("Account created! Please sign in.", { id: toastId });
+        router.push("/auth/login"); // ← redirect so user knows what to do next
       }
     } catch (error: unknown) {
-      const err = error as { response?: { data?: { message?: string } } };
-      toast.error(err.response?.data?.message || "Signup failed", {
-        id: toastId,
-      });
+      const err = error as {
+        response?: { data?: { message?: string; msg?: string } };
+      };
+      toast.error(
+        err.response?.data?.message ||
+          err.response?.data?.msg || // ← catches both shapes
+          "Signup failed. Please try again.",
+        { id: toastId },
+      );
     }
   };
 
