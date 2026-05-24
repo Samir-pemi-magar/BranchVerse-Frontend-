@@ -54,24 +54,37 @@ export default function StoryTitle() {
   const submitStory = async (isBranchable: boolean) => {
     if (!pendingData) return;
 
-    const formData = new FormData();
-    formData.append("title", pendingData.title);
-    formData.append("description", pendingData.description || "");
-    formData.append("branchAllowed", String(isBranchable));
-    pendingData.tags.forEach((tag) => formData.append("tags[]", tag));
-    pendingData.genre?.forEach((g) => formData.append("genre[]", g));
-    const compressed = await imageCompression(pendingData.cover[0], {
-      maxSizeMB: 0.5, // max 500KB
-      maxWidthOrHeight: 800, // resize to max 800px
-      useWebWorker: true,
-    });
-    formData.append("cover", compressed);
-
-    setShowConfirm(false); // close modal immediately
-    setCreating(true); // show loading overlay
+    setShowConfirm(false);
+    setCreating(true);
 
     try {
+      console.log(
+        "Original size:",
+        pendingData.cover[0].size / 1024 / 1024,
+        "MB",
+      );
+
+      console.time("compression");
+      const compressed = await imageCompression(pendingData.cover[0], {
+        maxSizeMB: 0.3,
+        maxWidthOrHeight: 600,
+        useWebWorker: true,
+        initialQuality: 0.7,
+      });
+      console.timeEnd("compression");
+
+      const formData = new FormData();
+      formData.append("title", pendingData.title);
+      formData.append("description", pendingData.description || "");
+      formData.append("branchAllowed", String(isBranchable));
+      pendingData.tags.forEach((tag) => formData.append("tags[]", tag));
+      pendingData.genre?.forEach((g) => formData.append("genre[]", g));
+      formData.append("cover", compressed);
+
+      console.time("upload");
       const res = await CreateStory(formData);
+      console.timeEnd("upload");
+
       console.log("Full response:", res);
 
       if (!res.storyId) {
