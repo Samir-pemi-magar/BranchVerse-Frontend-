@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FaBookmark, FaRegBookmark, FaHeart, FaEye } from "react-icons/fa";
 import {
@@ -54,6 +54,9 @@ const StoryCard: React.FC<StoryCardProps> = ({
     if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
     return `${Math.floor(diff / 86400)}d ago`;
   };
+  useEffect(() => {
+    setBookmarked(isBookmarked);
+  }, [isBookmarked]);
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();

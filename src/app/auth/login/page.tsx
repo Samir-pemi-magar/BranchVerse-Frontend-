@@ -17,8 +17,10 @@ export default function Login() {
   const { register, handleSubmit } = useForm<LoginFormInputs>();
   const [showPreferences, setShowPreferences] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
   const onSubmit = async (data: LoginFormInputs) => {
+    setIsLoading(true);
     const toastId = toast.loading("Logging in...");
     try {
       const res = await loginApi({
@@ -41,6 +43,8 @@ export default function Login() {
     } catch (error: unknown) {
       const err = error as { response?: { data?: { msg?: string } } };
       toast.error(err.response?.data?.msg || "Login failed", { id: toastId });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -53,7 +57,6 @@ export default function Login() {
 
   return (
     <>
-      {/* Custom styles for things Tailwind can't do inline */}
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
 
@@ -67,6 +70,9 @@ export default function Login() {
         @keyframes bvSlideUp {
           from { opacity: 0; transform: translateY(28px); }
           to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes bv-spin {
+          to { transform: rotate(360deg); }
         }
 
         .orb-1 { animation: bvDrift 12s ease-in-out infinite alternate; animation-delay: 0s; }
@@ -113,6 +119,15 @@ export default function Login() {
           flex: 1;
           height: 0.5px;
           background: rgba(255,255,255,0.08);
+        }
+
+        .btn-spinner {
+          width: 18px; height: 18px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: white;
+          border-radius: 50%;
+          animation: bv-spin 0.7s linear infinite;
+          flex-shrink: 0;
         }
       `}</style>
 
@@ -411,10 +426,14 @@ export default function Login() {
 
                 <button
                   type="submit"
-                  className="btn-login-gradient relative w-full h-[52px] rounded-xl text-white text-[15px] font-medium border-none cursor-pointer overflow-hidden transition-all duration-200 hover:opacity-[0.88] hover:-translate-y-px active:scale-[0.99] mb-4 tracking-[0.2px]"
+                  disabled={isLoading}
+                  className="btn-login-gradient relative w-full h-[52px] rounded-xl text-white text-[15px] font-medium border-none cursor-pointer overflow-hidden transition-all duration-200 hover:opacity-[0.88] hover:-translate-y-px active:scale-[0.99] mb-4 tracking-[0.2px] disabled:opacity-60 disabled:cursor-not-allowed disabled:hover:translate-y-0"
                   style={{ fontFamily: "'DM Sans', sans-serif" }}
                 >
-                  Log in
+                  <span className="flex items-center justify-center gap-2">
+                    {isLoading && <span className="btn-spinner" />}
+                    {isLoading ? "Logging in..." : "Log in"}
+                  </span>
                 </button>
               </form>
 

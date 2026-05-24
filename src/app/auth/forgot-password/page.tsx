@@ -263,7 +263,7 @@ export default function ForgotPasswordPage() {
           >
             Remembered it?{" "}
             <a
-              href="/login"
+              href="/auth/login"
               className="font-semibold transition-colors"
               style={{ color: "#15b0b7" }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#1dd3db")}
