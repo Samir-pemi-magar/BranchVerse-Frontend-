@@ -622,7 +622,7 @@ export default function Home() {
                           </p>
                         </div>
                         <p
-                          className="text-sm line-clamp-2"
+                          className="text-sm line-clamp-4"
                           style={{
                             color: "rgba(255,255,255,0.35)",
                             fontFamily: "'DM Sans', sans-serif",
