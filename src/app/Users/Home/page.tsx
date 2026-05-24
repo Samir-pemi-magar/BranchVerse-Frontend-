@@ -561,7 +561,6 @@ export default function Home() {
                 <RecommendedStorycard
                   key={story._id}
                   story={story}
-                  handleLikeStory={handleLikeStory}
                   currentUserId={currentUserId}
                 />
               ))}
