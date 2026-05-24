@@ -3,6 +3,7 @@ import StoryReaderSidebar from "@/src/component/StoryReaderSidebar";
 import StoryReaderComponent from "@/src/component/StoryReader";
 import { GetChapter } from "@/src/Services/storyApi";
 import { useEffect, useRef, useState } from "react";
+import { coverUrl } from "../../../../Utils/coverUrl";
 
 export interface Chapter {
   _id: string;
@@ -57,10 +58,9 @@ export default function StoryLayout({ storyId, chapterId }: LayoutProps) {
     fetchChapter();
   }, [storyId, chapterId]);
 
-  const coverSrc =
-    chapterContent?.cover && process.env.NEXT_PUBLIC_BASEURL
-      ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${chapterContent.cover}`
-      : "/images/placeholder-cover.png";
+  const coverSrc = chapterContent?.cover
+    ? coverUrl(chapterContent.cover)
+    : "/images/placeholder-cover.png";
 
   if (!chapterContent && error) {
     return <div className="text-red-500 p-10">{error}</div>;
