@@ -1,13 +1,14 @@
-// CreateStoryPage.tsx
 "use client";
 
 import RichTextEditor from "@/src/component/Richtexteditor";
 import { WriteStory } from "@/src/Services/storyApi";
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 
 export default function CreateStoryPage() {
   const searchParams = useSearchParams();
+  const router = useRouter();
+
   const storyId = searchParams.get("storyId");
   const parentChapterId = searchParams.get("parentChapterId") || undefined;
 
@@ -17,8 +18,128 @@ export default function CreateStoryPage() {
   const [loading, setLoading] = useState(false);
   const [published, setPublished] = useState(false);
 
+  // ✅ Authorization state
+  const [authorized, setAuthorized] = useState<boolean | null>(null); // null = still checking
+
+  useEffect(() => {
+    if (!storyId) return;
+
+    // Branches: anyone can write, skip ownership check
+    if (parentChapterId) {
+      setAuthorized(true);
+      return;
+    }
+
+    // Main chapter: verify current user is the story author
+    async function checkOwnership() {
+      try {
+        const currentUserId =
+          localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
+
+        if (!currentUserId) {
+          setAuthorized(false);
+          return;
+        }
+
+        const token =
+          localStorage.getItem("token") ?? sessionStorage.getItem("token");
+
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/${storyId}`,
+          {
+            headers: token ? { Authorization: `Bearer ${token}` } : {},
+          },
+        );
+
+        if (!res.ok) {
+          setAuthorized(false);
+          return;
+        }
+
+        const data = await res.json();
+
+        if (data.disabled) {
+          setAuthorized(false);
+          return;
+        }
+
+        const authorId =
+          typeof data.author === "object" ? data.author._id : data.author;
+
+        setAuthorized(authorId === currentUserId);
+      } catch {
+        setAuthorized(false);
+      }
+    }
+
+    checkOwnership();
+  }, [storyId, parentChapterId]);
+
   if (!storyId) {
     return <p className="p-10 text-red-500">Story ID missing</p>;
+  }
+
+  // ✅ Still checking
+  if (authorized === null) {
+    return (
+      <div
+        className="min-h-screen flex items-center justify-center"
+        style={{ background: "#0d0d12" }}
+      >
+        <div
+          className="w-10 h-10 rounded-full border-[3px] border-transparent animate-spin"
+          style={{ borderTopColor: "#6c4ef2", borderRightColor: "#15b0b7" }}
+        />
+      </div>
+    );
+  }
+
+  // ✅ Not authorized
+  if (!authorized) {
+    return (
+      <div
+        className="min-h-screen flex flex-col items-center justify-center gap-4"
+        style={{ background: "#0d0d12" }}
+      >
+        <div
+          className="w-16 h-16 rounded-full flex items-center justify-center"
+          style={{
+            background: "rgba(255,255,255,0.05)",
+            border: "0.5px solid rgba(255,255,255,0.1)",
+          }}
+        >
+          <svg
+            width="28"
+            height="28"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="rgba(255,255,255,0.4)"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+        </div>
+        <p className="font-playfair text-2xl font-bold text-white">
+          Access Denied
+        </p>
+        <p className="text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
+          You don&apos;t have permission to add chapters to this story.
+        </p>
+        <button
+          onClick={() => router.back()}
+          className="mt-2 px-6 py-2.5 rounded-xl text-sm font-medium text-white transition-all hover:opacity-80"
+          style={{
+            background: "rgba(108,78,242,0.25)",
+            border: "0.5px solid rgba(108,78,242,0.4)",
+          }}
+        >
+          Go Back
+        </button>
+      </div>
+    );
   }
 
   const handlePublish = async () => {
