@@ -53,27 +53,27 @@ export default function ConversationList({
           <li key={conv._id}>
             <button
               onClick={() => onSelect(conv)}
-              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-100
-                ${isSelected ? "bg-gray-200" : ""}`}
+              className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#1a1a24]
+                ${isSelected ? "bg-[#1a1a24]" : ""}`}
             >
               {/* Avatar */}
-              <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
+              <div className="w-10 h-10 rounded-full bg-[#2a2a35] flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
                 {conv.type === "group" ? "👥" : avatar}
               </div>
 
               {/* Name + preview */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="text-sm font-medium text-black truncate">
+                  <span className="text-sm font-medium text-white truncate">
                     {name}
                   </span>
                   {time && (
-                    <span className="text-xs text-gray-400 flex-shrink-0">
+                    <span className="text-xs text-gray-500 flex-shrink-0">
                       {time}
                     </span>
                   )}
                 </div>
-                <p className="text-xs text-gray-500 truncate mt-0.5">
+                <p className="text-xs text-gray-400 truncate mt-0.5">
                   {preview}
                 </p>
               </div>

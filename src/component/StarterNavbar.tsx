@@ -1,5 +1,4 @@
 "use client";
-
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -8,7 +7,13 @@ export default function StarterNavbar() {
   const [menuOpen, setMenuOpen] = useState(false);
 
   return (
-    <div className="fixed w-full bg-white border-b border-[#EBE4E4] z-50">
+    <div
+      className="fixed w-full z-50"
+      style={{
+        background: "#0d0d12",
+        borderBottom: "1px solid rgba(255,255,255,0.08)",
+      }}
+    >
       <div className="flex items-center justify-between h-[71px] px-6 md:px-12 lg:pl-[93px] lg:pr-[193px]">
         {/* Logo */}
         <p
@@ -22,13 +27,13 @@ export default function StarterNavbar() {
         <div className="hidden sm:flex font-bold flex-row gap-[43px] text-[16px]">
           <p
             onClick={() => router.push("/auth/login")}
-            className="cursor-pointer hover:underline hover:text-[#00B8AE] transition-colors text-gray-800"
+            className="cursor-pointer hover:underline hover:text-[#00B8AE] transition-colors text-gray-300"
           >
             Login
           </p>
           <p
             onClick={() => router.push("/auth/Signup")}
-            className="cursor-pointer hover:underline hover:text-[#00B8AE] transition-colors text-gray-800"
+            className="cursor-pointer hover:underline hover:text-[#00B8AE] transition-colors text-gray-300"
           >
             Sign up
           </p>
@@ -37,7 +42,7 @@ export default function StarterNavbar() {
         {/* Mobile hamburger */}
         <button
           onClick={() => setMenuOpen(!menuOpen)}
-          className="sm:hidden text-gray-700 hover:text-[#00B8AE] transition-colors p-1"
+          className="sm:hidden text-gray-400 hover:text-[#00B8AE] transition-colors p-1"
           aria-label="Toggle menu"
         >
           {menuOpen ? (
@@ -75,13 +80,20 @@ export default function StarterNavbar() {
 
       {/* Mobile dropdown */}
       {menuOpen && (
-        <div className="sm:hidden border-t border-[#EBE4E4] bg-white px-6 py-3 flex flex-col">
+        <div
+          className="sm:hidden px-6 py-3 flex flex-col"
+          style={{
+            background: "#0d0d12",
+            borderTop: "1px solid rgba(255,255,255,0.08)",
+          }}
+        >
           <p
             onClick={() => {
               router.push("/auth/login");
               setMenuOpen(false);
             }}
-            className="py-3 font-bold text-[15px] text-gray-700 hover:text-[#00B8AE] border-b border-gray-100 cursor-pointer transition-colors"
+            className="py-3 font-bold text-[15px] text-gray-300 hover:text-[#00B8AE] cursor-pointer transition-colors"
+            style={{ borderBottom: "1px solid rgba(255,255,255,0.06)" }}
           >
             Login
           </p>
@@ -90,7 +102,7 @@ export default function StarterNavbar() {
               router.push("/auth/Signup");
               setMenuOpen(false);
             }}
-            className="py-3 font-bold text-[15px] text-gray-700 hover:text-[#00B8AE] cursor-pointer transition-colors"
+            className="py-3 font-bold text-[15px] text-gray-300 hover:text-[#00B8AE] cursor-pointer transition-colors"
           >
             Sign up
           </p>

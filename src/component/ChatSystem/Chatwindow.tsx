@@ -140,17 +140,17 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
   const displayName = getDisplayName(conversation, currentUserId);
 
   return (
-    <div className="flex flex-col h-full bg-white min-h-0">
+    <div className="flex flex-col h-full bg-[#0d0d12] min-h-0">
       {/* Header */}
-      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-200 bg-white flex-shrink-0">
-        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-black flex-shrink-0">
+      <div className="flex items-center gap-3 px-4 sm:px-5 py-3 sm:py-4 border-b border-gray-800 bg-[#0d0d12] flex-shrink-0">
+        <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-[#1a1a24] flex items-center justify-center text-sm font-semibold text-white flex-shrink-0">
           {conversation.type === "group" ? "👥" : displayName[0]?.toUpperCase()}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-black truncate">
+          <p className="text-sm font-medium text-white truncate">
             {displayName}
           </p>
-          <p className="text-xs text-gray-500">
+          <p className="text-xs text-gray-400">
             {conversation.type === "group"
               ? `${conversation.participants.length} members`
               : "Direct message"}
@@ -159,7 +159,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-1 bg-white min-h-0">
+      <div className="flex-1 overflow-y-auto px-3 sm:px-5 py-4 flex flex-col gap-1 bg-[#0d0d12] min-h-0">
         {hasMore && (
           <button
             onClick={() => {
@@ -167,7 +167,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
               setPage(next);
               fetchMessages(next);
             }}
-            className="text-xs text-gray-500 hover:text-gray-700 self-center mb-2 underline"
+            className="text-xs text-gray-500 hover:text-gray-300 self-center mb-2 underline"
           >
             Load older messages
           </button>
@@ -178,7 +178,7 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
             Loading...
           </div>
         ) : messages.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center text-gray-400 text-sm">
+          <div className="flex-1 flex items-center justify-center text-gray-500 text-sm">
             No messages yet. Say hello! 👋
           </div>
         ) : (
@@ -205,15 +205,15 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
           <div className="flex items-center gap-2 text-gray-500 text-xs mt-1">
             <span className="flex gap-1">
               <span
-                className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"
                 style={{ animationDelay: "0ms" }}
               />
               <span
-                className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"
                 style={{ animationDelay: "150ms" }}
               />
               <span
-                className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+                className="w-1.5 h-1.5 bg-gray-500 rounded-full animate-bounce"
                 style={{ animationDelay: "300ms" }}
               />
             </span>
@@ -225,8 +225,8 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
       </div>
 
       {/* Input */}
-      <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-gray-200 bg-white flex-shrink-0">
-        <div className="flex items-end gap-2 sm:gap-3 bg-gray-100 rounded-2xl px-3 sm:px-4 py-2 sm:py-3">
+      <div className="px-3 sm:px-5 py-3 sm:py-4 border-t border-gray-800 bg-[#0d0d12] flex-shrink-0">
+        <div className="flex items-end gap-2 sm:gap-3 bg-[#1a1a24] rounded-2xl px-3 sm:px-4 py-2 sm:py-3">
           <textarea
             rows={1}
             value={content}
@@ -236,18 +236,18 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
             }}
             onKeyDown={handleKeyDown}
             placeholder="Type a message..."
-            className="flex-1 bg-transparent text-sm text-black placeholder-gray-500 resize-none outline-none max-h-32 min-w-0"
+            className="flex-1 bg-transparent text-sm text-white placeholder-gray-500 resize-none outline-none max-h-32 min-w-0"
           />
           <button
             onClick={handleSend}
             disabled={!content.trim()}
-            className="w-8 h-8 rounded-full bg-black flex items-center justify-center text-white text-sm font-bold
-              disabled:opacity-20 hover:bg-gray-800 transition-colors flex-shrink-0"
+            className="w-8 h-8 rounded-full bg-white flex items-center justify-center text-black text-sm font-bold
+              disabled:opacity-20 hover:bg-gray-200 transition-colors flex-shrink-0"
           >
             ↑
           </button>
         </div>
-        <p className="text-[10px] text-gray-400 mt-1.5 ml-1 hidden sm:block">
+        <p className="text-[10px] text-gray-500 mt-1.5 ml-1 hidden sm:block">
           Enter to send · Shift+Enter for new line
         </p>
       </div>

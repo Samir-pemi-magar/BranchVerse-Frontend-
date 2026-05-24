@@ -1,4 +1,5 @@
 "use client";
+
 import { getPreferences } from "@/src/Services/authapi";
 import StoryCard from "@/src/component/AllStoryCard";
 import { coverUrl } from "../../../../Utils/coverUrl";
@@ -8,11 +9,9 @@ import {
   GetPersonalizedStories,
   GetRecommendedStories,
   GetFilteredStories,
-  LikeStory,
 } from "@/src/Services/storyApi";
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import RecommendedStorycard from "@/src/component/RecommendedStorycard";
 import { useSearchParams } from "next/navigation";
 
 interface Author {
@@ -52,12 +51,12 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(months / 12)}y`;
 }
 
-export default function Home() {
+export default function StoryExplorer() {
   const [preferences, setPreferences] = useState<string[]>([]);
   const [stories, setStories] = useState<Story[]>([]);
   const [trendingStories, setTrendingStories] = useState<Story[]>([]);
   const [currentTrendingIndex, setCurrentTrendingIndex] = useState(0);
-  const [, setRecommendedStories] = useState<Story[]>([]);
+  const [recommendedStories, setRecommendedStories] = useState<Story[]>([]);
   const [personalizedStories, setPersonalizedStories] = useState<Story[]>([]);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [customTag, setCustomTag] = useState("");
@@ -70,20 +69,21 @@ export default function Home() {
   const searchParams = useSearchParams();
   const search = searchParams.get("search") ?? "";
 
-  // Fetch all stories
+  // Auth User ID
   useEffect(() => {
     const id =
       localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
     if (id) setCurrentUserId(id);
   }, []);
 
+  // Base Fetch
   useEffect(() => {
     let mounted = true;
     const fetchAllStories = async () => {
       try {
         setLoading(true);
         const data = await GetAllStories();
-        if (mounted) setStories(data.stories);
+        if (mounted) setStories(data.stories || []);
       } catch (err) {
         console.error("Failed to fetch all stories", err);
       } finally {
@@ -96,7 +96,7 @@ export default function Home() {
     };
   }, []);
 
-  // Fetch user preferences
+  // Get User Preferences
   useEffect(() => {
     const fetchPreferences = async () => {
       const token = localStorage.getItem("token");
@@ -111,12 +111,12 @@ export default function Home() {
     fetchPreferences();
   }, []);
 
-  // Fetch trending stories
+  // Get Trending
   useEffect(() => {
     const fetchTrending = async () => {
       try {
         const data = await GetTrendingStories();
-        setTrendingStories(data.slice(0, 5));
+        setTrendingStories(Array.isArray(data) ? data.slice(0, 5) : []);
       } catch (err) {
         console.error("Failed to fetch trending stories", err);
       }
@@ -124,33 +124,38 @@ export default function Home() {
     fetchTrending();
   }, []);
 
-  // Fetch recommended & personalized stories
+  // Get Recommendations based on Preferences
   useEffect(() => {
     if (preferences.length === 0) return;
+    let mounted = true;
 
-    const fetchRecommended = async () => {
+    const fetchRecommendedData = async () => {
       try {
         const data = await GetRecommendedStories();
-        setRecommendedStories(data.stories ?? []);
+        if (mounted) setRecommendedStories(data.stories ?? []);
       } catch (err) {
         console.error("Failed to fetch recommended stories", err);
       }
     };
 
-    const fetchPersonalized = async () => {
+    const fetchPersonalizedData = async () => {
       try {
         const data = await GetPersonalizedStories();
-        setPersonalizedStories(data);
+        if (mounted) setPersonalizedStories(data ?? []);
       } catch (err) {
         console.error("Failed to fetch personalized stories", err);
       }
     };
 
-    fetchRecommended();
-    fetchPersonalized();
+    fetchRecommendedData();
+    fetchPersonalizedData();
+
+    return () => {
+      mounted = false;
+    };
   }, [preferences]);
 
-  // Trending carousel auto-advance
+  // Carousel Interval
   useEffect(() => {
     if (trendingStories.length === 0) return;
     const interval = setInterval(() => {
@@ -159,7 +164,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [trendingStories]);
 
-  // Tag filter handlers
   const toggleTag = (tag: string) => {
     setSelectedTags((prev) =>
       prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag],
@@ -172,7 +176,7 @@ export default function Home() {
       const allTags = [...selectedTags];
       if (customTag.trim()) allTags.push(customTag.trim());
       const filtered = await GetFilteredStories(allTags);
-      setStories(filtered);
+      setStories(filtered || []);
       setShowFilter(false);
     } catch (err) {
       console.error("Failed to fetch filtered stories", err);
@@ -188,7 +192,7 @@ export default function Home() {
     setLoading(true);
     try {
       const data = await GetAllStories();
-      setStories(data.stories); // ← was: setStories(data)
+      setStories(data.stories || []);
     } catch (err) {
       console.error("Failed to fetch all stories", err);
     } finally {
@@ -196,7 +200,6 @@ export default function Home() {
     }
   };
 
-  // Filter stories by search query from URL
   const visibleStories = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return stories;
@@ -209,258 +212,565 @@ export default function Home() {
     );
   }, [stories, search]);
 
-  const handleLikeStory = async (id: string) => {
-    const res = await LikeStory(id);
-    setStories((prev) =>
-      prev.map((story) =>
-        story._id === id ? { ...story, likes: res.likes } : story,
-      ),
-    );
-  };
-
   return (
-    <div className="pt-[70px] sm:pt-[90px] w-full bg-gray-50 min-h-screen">
-      <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
-        {/* ── Header ── */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between py-4 sm:py-6">
-          <div>
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold text-gray-900 leading-tight">
-              Story Explorer
-            </h1>
-            <p className="text-xs sm:text-sm text-gray-500 mt-1">
-              Discover trending, recommended and curated stories.
-              {search && (
-                <span className="ml-2 text-[#00B8AE] font-medium">
-                  Results for &ldquo;{search}&rdquo;
-                </span>
-              )}
-            </p>
-          </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=DM+Sans:wght@300;400;500&display=swap');
+        .font-playfair { font-family: 'Playfair Display', serif; }
+        .font-dm { font-family: 'DM Sans', sans-serif; }
 
-          {/* Filter button */}
-          <div className="relative self-start sm:self-auto">
-            <button
-              onClick={() => setShowFilter((p) => !p)}
-              className="flex items-center gap-2 px-4 py-2 border rounded-lg shadow-sm bg-white hover:bg-gray-100 transition text-sm"
-              aria-expanded={showFilter}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-4 w-4 sm:h-5 sm:w-5 text-gray-700 shrink-0"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 009 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
-                />
-              </svg>
-              <span>Filters</span>
-              {selectedTags.length > 0 && (
-                <span className="bg-[#00B8AE] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0">
-                  {selectedTags.length}
-                </span>
-              )}
-            </button>
+        @keyframes orb-drift {
+          from { transform: translate(0,0) scale(1); }
+          to { transform: translate(25px,-25px) scale(1.05); }
+        }
+        @keyframes fade-up {
+          from { opacity:0; transform:translateY(20px); }
+          to { opacity:1; transform:translateY(0); }
+        }
 
-            {showFilter && (
-              /* Dropdown: full-width on mobile, fixed width on larger screens */
-              <div className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[360px] bg-white border rounded-xl shadow-xl p-4 z-40">
-                <div className="flex items-center justify-between mb-3">
-                  <p className="font-semibold text-gray-700">Tags</p>
-                  <button
-                    onClick={clearFilters}
-                    className="text-sm text-[#00B8AE] hover:underline"
-                  >
-                    Clear
-                  </button>
-                </div>
+        .orb-1 { animation: orb-drift 14s ease-in-out infinite alternate; }
+        .orb-2 { animation: orb-drift 14s ease-in-out infinite alternate; animation-delay:-5s; }
+        .orb-3 { animation: orb-drift 14s ease-in-out infinite alternate; animation-delay:-9s; }
+        .fade-up { animation: fade-up 0.55s cubic-bezier(0.22,1,0.36,1) both; }
 
-                <div className="flex gap-2 flex-wrap mb-3">
-                  {presetTags.map((tag) => (
-                    <button
-                      key={tag}
-                      onClick={() => toggleTag(tag)}
-                      className={`px-3 py-1 rounded-full text-sm border transition ${
-                        selectedTags.includes(tag)
-                          ? "bg-[#00B8AE] text-white border-[#00B8AE]"
-                          : "bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200"
-                      }`}
+        .noise {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+          background-size: 180px;
+        }
+
+        .dark-input {
+          background: rgba(255,255,255,0.05);
+          border: 0.5px solid rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.88);
+          border-radius: 12px;
+          outline: none;
+          transition: border-color 0.2s, background 0.2s;
+          font-family: 'DM Sans', sans-serif;
+        }
+        .dark-input:focus {
+          border-color: rgba(108,78,242,0.5);
+          background: rgba(108,78,242,0.04);
+        }
+        .dark-input::placeholder { color: rgba(255,255,255,0.2); }
+
+        .filter-tag {
+          padding: 5px 14px;
+          border-radius: 999px;
+          font-size: 13px;
+          font-weight: 500;
+          cursor: pointer;
+          transition: all 0.15s;
+          border: 0.5px solid rgba(255,255,255,0.12);
+          background: rgba(255,255,255,0.04);
+          color: rgba(255,255,255,0.5);
+          font-family: 'DM Sans', sans-serif;
+        }
+        .filter-tag:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.8); }
+        .filter-tag.active {
+          background: rgba(108,78,242,0.25);
+          border-color: rgba(108,78,242,0.5);
+          color: #957bda;
+        }
+
+        .apply-btn {
+          background: linear-gradient(130deg, #6c4ef2 0%, #15b0b7 100%);
+          transition: all 0.2s;
+        }
+        .apply-btn:hover { opacity: 0.88; transform: translateY(-1px); }
+
+        .section-label {
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(255,255,255,0.3);
+          font-family: 'DM Sans', sans-serif;
+        }
+
+        .trending-badge {
+          background: linear-gradient(130deg, #6c4ef2, #15b0b7);
+          font-family: 'DM Sans', sans-serif;
+          font-size: 11px;
+          font-weight: 600;
+          letter-spacing: 0.06em;
+          text-transform: uppercase;
+        }
+
+        .skeleton-pulse {
+          background: linear-gradient(90deg, rgba(255,255,255,0.04) 25%, rgba(255,255,255,0.08) 50%, rgba(255,255,255,0.04) 75%);
+          background-size: 200% 100%;
+          animation: skeleton-shimmer 1.5s infinite;
+          border-radius: 16px;
+        }
+        @keyframes skeleton-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+
+        .community-scroll {
+          display: flex;
+          gap: 16px;
+          overflow-x: auto;
+          padding-bottom: 8px;
+          scrollbar-width: none;
+        }
+        .community-scroll::-webkit-scrollbar { display: none; }
+
+        .community-card {
+          flex: 0 0 260px;
+          background: rgba(255,255,255,0.03);
+          border: 0.5px solid rgba(255,255,255,0.08);
+          border-radius: 16px;
+          overflow: hidden;
+          transition: all 0.2s;
+          cursor: pointer;
+          text-decoration: none;
+        }
+        .community-card:hover {
+          background: rgba(255,255,255,0.06);
+          border-color: rgba(21,176,183,0.3);
+          transform: translateY(-3px);
+        }
+      `}</style>
+
+      <div
+        className="font-dm relative min-h-screen"
+        style={{ background: "#0d0d12" }}
+      >
+        {/* Orbs Background */}
+        <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
+          <div
+            className="orb-1 absolute rounded-full"
+            style={{
+              width: 520,
+              height: 520,
+              background: "#6c4ef2",
+              filter: "blur(90px)",
+              opacity: 0.22,
+              top: -120,
+              right: -80,
+            }}
+          />
+          <div
+            className="orb-2 absolute rounded-full"
+            style={{
+              width: 380,
+              height: 380,
+              background: "#15b0b7",
+              filter: "blur(90px)",
+              opacity: 0.22,
+              bottom: -80,
+              left: -80,
+            }}
+          />
+          <div
+            className="orb-3 absolute rounded-full"
+            style={{
+              width: 260,
+              height: 260,
+              background: "#e5839a",
+              filter: "blur(80px)",
+              opacity: 0.12,
+              top: "35%",
+              left: "35%",
+            }}
+          />
+        </div>
+        <div className="noise fixed inset-0 z-[1] opacity-[0.03] pointer-events-none" />
+
+        <div className="relative z-[2] pt-[70px] sm:pt-[90px] w-full">
+          <div className="max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8">
+            {/* ── Header ── */}
+            <div className="fade-up relative z-50 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between py-6 sm:py-10">
+              <div>
+                <span className="section-label">Discover</span>
+                <h1 className="font-playfair text-3xl sm:text-4xl lg:text-5xl font-bold text-white mt-2 leading-tight tracking-tight">
+                  Story Explorer
+                </h1>
+                <p
+                  className="text-sm mt-2"
+                  style={{ color: "rgba(255,255,255,0.35)" }}
+                >
+                  Trending, recommended, and curated worlds to explore.
+                  {search && (
+                    <span
+                      className="ml-2 font-medium"
+                      style={{ color: "#15b0b7" }}
                     >
-                      {tag}
+                      Results for &ldquo;{search}&rdquo;
+                    </span>
+                  )}
+                </p>
+              </div>
+
+              {/* Tag Filters dropdown */}
+              <div className="relative z-40 self-start sm:self-auto">
+                <button
+                  onClick={() => setShowFilter((p) => !p)}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.06)",
+                    border: "0.5px solid rgba(255,255,255,0.12)",
+                    color: "rgba(255,255,255,0.7)",
+                  }}
+                  aria-expanded={showFilter}
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-4 w-4 shrink-0"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 13.414V19a1 1 0 01-1.447.894l-4-2A1 1 0 009 17v-3.586L3.293 6.707A1 1 0 013 6V4z"
+                    />
+                  </svg>
+                  <span>Filters</span>
+                  {selectedTags.length > 0 && (
+                    <span
+                      className="text-white text-xs rounded-full w-5 h-5 flex items-center justify-center shrink-0"
+                      style={{
+                        background: "linear-gradient(130deg,#6c4ef2,#15b0b7)",
+                      }}
+                    >
+                      {selectedTags.length}
+                    </span>
+                  )}
+                </button>
+
+                {showFilter && (
+                  <div
+                    className="absolute right-0 mt-2 w-[calc(100vw-2rem)] max-w-[360px] rounded-2xl p-5 z-50"
+                    style={{
+                      background: "rgba(20,18,30,0.97)",
+                      border: "0.5px solid rgba(255,255,255,0.12)",
+                      backdropFilter: "blur(16px)",
+                    }}
+                  >
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="font-semibold text-white text-sm">
+                        Filter by Tags
+                      </p>
+                      <button
+                        onClick={clearFilters}
+                        className="text-xs font-medium"
+                        style={{ color: "#15b0b7" }}
+                      >
+                        Clear all
+                      </button>
+                    </div>
+                    <div className="flex gap-2 flex-wrap mb-4">
+                      {presetTags.map((tag) => (
+                        <button
+                          key={tag}
+                          onClick={() => toggleTag(tag)}
+                          className={`filter-tag ${selectedTags.includes(tag) ? "active" : ""}`}
+                        >
+                          {tag}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="flex gap-2">
+                      <input
+                        type="text"
+                        placeholder="Custom tag…"
+                        value={customTag}
+                        onChange={(e) => setCustomTag(e.target.value)}
+                        className="dark-input flex-1 h-10 px-3 text-sm min-w-0"
+                      />
+                      <button
+                        onClick={handleFilter}
+                        className="apply-btn text-white px-5 py-2 rounded-xl text-sm font-medium shrink-0"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* ── Trending Carousel ── */}
+            {trendingStories.length > 0 &&
+              trendingStories[currentTrendingIndex] && (
+                <div
+                  className="fade-up relative rounded-2xl overflow-hidden"
+                  style={{ border: "0.5px solid rgba(255,255,255,0.08)" }}
+                >
+                  <Link
+                    href={`/Users/StoryPreview?id=${trendingStories[currentTrendingIndex]._id}`}
+                    className="relative block h-[280px] xs:h-[320px] sm:h-[380px] md:h-[460px]"
+                    aria-label={`Open ${trendingStories[currentTrendingIndex].title}`}
+                  >
+                    <img
+                      src={coverUrl(
+                        trendingStories[currentTrendingIndex].cover,
+                      )}
+                      alt={trendingStories[currentTrendingIndex].title}
+                      className="w-full h-full object-cover"
+                    />
+                    <div
+                      className="absolute inset-0"
+                      style={{
+                        background:
+                          "linear-gradient(to top, rgba(13,13,18,0.95) 0%, rgba(13,13,18,0.35) 55%, transparent 100%)",
+                      }}
+                    />
+                    <div className="absolute top-4 left-4">
+                      <span className="trending-badge text-white px-3 py-1 rounded-full">
+                        🔥 Trending
+                      </span>
+                    </div>
+                    <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+                      <div className="max-w-2xl">
+                        <p className="font-playfair text-white text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight leading-tight line-clamp-2">
+                          {trendingStories[currentTrendingIndex].title}
+                        </p>
+                        <p
+                          className="text-sm mt-2"
+                          style={{ color: "rgba(255,255,255,0.5)" }}
+                        >
+                          By{" "}
+                          {
+                            trendingStories[currentTrendingIndex].author
+                              .username
+                          }{" "}
+                          &bull;{" "}
+                          {timeAgo(
+                            trendingStories[currentTrendingIndex].createdAt,
+                          )}{" "}
+                          &bull; {trendingStories[currentTrendingIndex].views}{" "}
+                          views
+                        </p>
+                        <p
+                          className="hidden sm:block text-sm mt-2 line-clamp-3 text-ellipsis"
+                          style={{
+                            color: "rgba(255,255,255,0.4)",
+                            display: "-webkit-box",
+                            WebkitLineClamp: 3,
+                            WebkitBoxOrient: "vertical",
+                          }}
+                        >
+                          {trendingStories[currentTrendingIndex].description}
+                        </p>
+                      </div>
+                    </div>
+                  </Link>
+
+                  {/* Arrow Controls */}
+                  <div className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-10">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentTrendingIndex(
+                          (p) =>
+                            (p - 1 + trendingStories.length) %
+                            trendingStories.length,
+                        );
+                      }}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all hover:bg-white/20"
+                      style={{
+                        background: "rgba(255,255,255,0.12)",
+                        border: "0.5px solid rgba(255,255,255,0.2)",
+                      }}
+                      aria-label="Previous"
+                    >
+                      &lsaquo;
                     </button>
-                  ))}
+                  </div>
+                  <div className="absolute right-3 sm:right-5 top-1/2 -translate-y-1/2 z-10">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        setCurrentTrendingIndex(
+                          (p) => (p + 1) % trendingStories.length,
+                        );
+                      }}
+                      className="w-9 h-9 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-white text-lg font-bold transition-all hover:bg-white/20"
+                      style={{
+                        background: "rgba(255,255,255,0.12)",
+                        border: "0.5px solid rgba(255,255,255,0.2)",
+                      }}
+                      aria-label="Next"
+                    >
+                      &rsaquo;
+                    </button>
+                  </div>
+
+                  {/* Indicator Dots */}
+                  <div className="absolute bottom-4 right-6 flex gap-1.5 z-10">
+                    {trendingStories.map((_, i) => (
+                      <button
+                        key={i}
+                        onClick={() => setCurrentTrendingIndex(i)}
+                        className="rounded-full transition-all"
+                        style={{
+                          width: i === currentTrendingIndex ? "20px" : "6px",
+                          height: "6px",
+                          background:
+                            i === currentTrendingIndex
+                              ? "#15b0b7"
+                              : "rgba(255,255,255,0.3)",
+                        }}
+                        aria-label={`Show slide ${i + 1}`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+            {/* ── Community Highlights ── */}
+            {recommendedStories.length > 0 && (
+              <div className="mt-12 sm:mt-16">
+                <div className="flex items-end justify-between mb-6">
+                  <div>
+                    <span className="section-label">Community Highlights</span>
+                    <h2 className="font-playfair text-2xl sm:text-3xl font-bold text-white mt-1">
+                      Loved by Readers
+                    </h2>
+                  </div>
+                  <span
+                    className="text-xs pb-1"
+                    style={{ color: "rgba(255,255,255,0.3)" }}
+                  >
+                    {recommendedStories.length} picks
+                  </span>
                 </div>
 
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Add custom tag"
-                    value={customTag}
-                    onChange={(e) => setCustomTag(e.target.value)}
-                    className="border p-2 rounded-lg flex-1 text-sm min-w-0"
-                  />
-                  <button
-                    onClick={handleFilter}
-                    className="bg-[#00B8AE] text-white px-4 py-2 rounded-lg hover:bg-[#009A94] text-sm shrink-0"
-                  >
-                    Apply
-                  </button>
+                <div className="community-scroll">
+                  {recommendedStories.map((story) => {
+                    const src = story.cover
+                      ? story.cover.startsWith("http")
+                        ? story.cover
+                        : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+                      : undefined;
+                    return (
+                      <Link
+                        key={story._id}
+                        href={`/Users/StoryPreview?id=${story._id}`}
+                        className="community-card"
+                      >
+                        <div className="relative h-[160px] w-full">
+                          {src ? (
+                            <img
+                              src={src}
+                              alt={story.title}
+                              className="w-full h-full object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div
+                              className="skeleton-pulse w-full h-full"
+                              style={{ borderRadius: 0 }}
+                            />
+                          )}
+                          <div
+                            className="absolute inset-0"
+                            style={{
+                              background:
+                                "linear-gradient(to top, rgba(13,13,18,0.85) 0%, transparent 60%)",
+                            }}
+                          />
+                          {story.branchAllowed && (
+                            <div
+                              className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-white text-[10px] font-semibold"
+                              style={{
+                                background:
+                                  "linear-gradient(130deg,#6c4ef2,#15b0b7)",
+                              }}
+                            >
+                              Branchable
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3">
+                          <p className="font-playfair font-bold text-white text-sm line-clamp-2 leading-snug">
+                            {story.title}
+                          </p>
+                          <p
+                            className="text-xs mt-1"
+                            style={{ color: "rgba(255,255,255,0.4)" }}
+                          >
+                            by {story.author.username}
+                          </p>
+                          <div
+                            className="flex items-center gap-3 mt-2 text-xs"
+                            style={{ color: "rgba(255,255,255,0.35)" }}
+                          >
+                            <span>👁 {story.views}</span>
+                            <span>❤ {story.likes}</span>
+                            <span>⎇ {story.branchesCount}</span>
+                          </div>
+                        </div>
+                      </Link>
+                    );
+                  })}
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
-        {/* ── Trending Carousel ── */}
-        {trendingStories.length > 0 && (
-          <div className="mt-4 sm:mt-6 relative rounded-xl overflow-hidden shadow-md">
-            <Link
-              href={`/Users/StoryPreview?id=${trendingStories[currentTrendingIndex]._id}`}
-              /* Taller on mobile so text is readable; shorter on larger screens */
-              className="relative block h-[280px] xs:h-[320px] sm:h-[360px] md:h-[420px]"
-              aria-label={`Open ${trendingStories[currentTrendingIndex].title}`}
-            >
-              <img
-                src={coverUrl(trendingStories[currentTrendingIndex].cover)}
-                alt={trendingStories[currentTrendingIndex].title}
-                className="w-full h-full object-cover"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent p-4 sm:p-6 flex flex-col justify-end">
-                <div className="max-w-2xl">
-                  <p className="text-white text-xl sm:text-2xl md:text-3xl font-bold tracking-wide line-clamp-2">
-                    {trendingStories[currentTrendingIndex].title}
-                  </p>
-                  <p className="text-gray-300 text-xs sm:text-sm mt-1">
-                    By {trendingStories[currentTrendingIndex].author.username} •{" "}
-                    {timeAgo(trendingStories[currentTrendingIndex].createdAt)} •{" "}
-                    {trendingStories[currentTrendingIndex].views} views
-                  </p>
-                  <p className="hidden sm:line-clamp-4 text-gray-200 text-sm mt-2">
-                    {trendingStories[currentTrendingIndex].description}
-                  </p>
+            {/* ── All Stories Grid ── */}
+            <div className="mt-12 sm:mt-16 pb-12 sm:pb-16">
+              <div className="flex items-end justify-between mb-6 sm:mb-8">
+                <div>
+                  <span className="section-label">Browse</span>
+                  <h2 className="font-playfair text-2xl sm:text-3xl font-bold text-white mt-1">
+                    All Stories
+                  </h2>
                 </div>
+                <p
+                  className="text-xs pb-1"
+                  style={{ color: "rgba(255,255,255,0.3)" }}
+                >
+                  {visibleStories.length}{" "}
+                  {visibleStories.length === 1 ? "story" : "stories"}
+                </p>
               </div>
-            </Link>
 
-            {/* Prev button */}
-            <div className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2">
-              <button
-                onClick={() =>
-                  setCurrentTrendingIndex(
-                    (p) =>
-                      (p - 1 + trendingStories.length) % trendingStories.length,
-                  )
-                }
-                className="bg-white/80 p-1.5 sm:p-2 rounded-full hover:bg-white shadow text-lg sm:text-xl leading-none"
-                aria-label="Previous"
-              >
-                ‹
-              </button>
-            </div>
-
-            {/* Next button */}
-            <div className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2">
-              <button
-                onClick={() =>
-                  setCurrentTrendingIndex(
-                    (p) => (p + 1) % trendingStories.length,
-                  )
-                }
-                className="bg-white/80 p-1.5 sm:p-2 rounded-full hover:bg-white shadow text-lg sm:text-xl leading-none"
-                aria-label="Next"
-              >
-                ›
-              </button>
-            </div>
-
-            {/* Dot indicators */}
-            <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
-              {trendingStories.map((_, i) => (
-                <button
-                  key={i}
-                  onClick={() => setCurrentTrendingIndex(i)}
-                  className={`rounded-full transition-all ${
-                    i === currentTrendingIndex
-                      ? "bg-white w-4 h-2.5 sm:w-5 sm:h-3"
-                      : "bg-white/50 w-2.5 h-2.5 sm:w-3 sm:h-3"
-                  }`}
-                  aria-label={`Show slide ${i + 1}`}
-                />
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* ── All Stories ── */}
-        <div className="mt-8 sm:mt-10">
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900">
-              All Stories
-            </h2>
-            <p className="text-xs sm:text-sm text-gray-500">
-              Showing {visibleStories.length}{" "}
-              {visibleStories.length === 1 ? "story" : "stories"}
-            </p>
-          </div>
-
-          {loading ? (
-            /* Skeleton grid — 1 col on mobile, 2 on sm, 3 on lg */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {Array.from({ length: 6 }).map((_, i) => (
+              {loading ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {Array.from({ length: 6 }).map((_, i) => (
+                    <div
+                      key={i}
+                      className="skeleton-pulse h-[300px] sm:h-[340px]"
+                    />
+                  ))}
+                </div>
+              ) : visibleStories.length === 0 ? (
                 <div
-                  key={i}
-                  className="animate-pulse bg-white rounded-xl p-4 h-[280px] sm:h-[320px] border"
-                />
-              ))}
-            </div>
-          ) : visibleStories.length === 0 ? (
-            <div className="bg-white rounded-xl p-6 sm:p-8 border text-center">
-              <p className="text-gray-700 font-medium">No stories found.</p>
-              <p className="text-sm text-gray-500 mt-2">
-                Try clearing filters or searching for something else.
-              </p>
-            </div>
-          ) : (
-            /* Story cards grid */
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {visibleStories.map((story) => (
-                <div key={story._id} className="min-w-0">
-                  <StoryCard
-                    story={story}
-                    currentUserId={currentUserId}
-                    handleLikeStory={handleLikeStory}
-                  />
+                  className="rounded-2xl p-8 sm:p-12 text-center"
+                  style={{
+                    background: "rgba(255,255,255,0.03)",
+                    border: "0.5px solid rgba(255,255,255,0.08)",
+                  }}
+                >
+                  <p className="font-playfair text-xl text-white font-bold">
+                    No stories found.
+                  </p>
+                  <p
+                    className="text-sm mt-2"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    Try clearing filters or searching for something else.
+                  </p>
                 </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {/* ── Recommended / Personalized ── */}
-        {personalizedStories.length > 0 && (
-          <div className="w-full mt-12 sm:mt-16 lg:mt-20 pb-12 sm:pb-16">
-            <p className="font-bold text-xl sm:text-2xl lg:text-[28px] text-gray-900 text-center mb-6 sm:mb-8">
-              Recommended For You
-            </p>
-            {/* Recommended cards grid — same breakpoints as All Stories for consistency */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-              {personalizedStories.map((story) => (
-                <div key={story._id} className="min-w-0">
-                  <RecommendedStorycard
-                    story={story}
-                    currentUserId={currentUserId}
-                    handleLikeStory={handleLikeStory}
-                  />
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                  {visibleStories.map((story) => (
+                    <div key={story._id} className="min-w-0">
+                      <StoryCard story={story} currentUserId={currentUserId} />
+                    </div>
+                  ))}
                 </div>
-              ))}
+              )}
             </div>
           </div>
-        )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

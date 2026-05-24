@@ -81,23 +81,23 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-gray-50 text-gray-900 font-['DM_Sans',sans-serif] overflow-hidden">
+    <div className="flex h-screen bg-[#0d0d12] text-white font-['DM_Sans',sans-serif] overflow-hidden">
       {/* Sidebar — always visible on md+, toggled on mobile */}
       <aside
         className={`
-          flex flex-col border-r border-gray-200 bg-white
+          flex flex-col border-r border-gray-800 bg-[#0d0d12]
           w-full md:w-80 md:min-w-[280px] md:flex-shrink-0
           ${showSidebar ? "flex" : "hidden"} md:flex
         `}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-200">
-          <h1 className="text-lg font-semibold tracking-tight text-gray-900">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
+          <h1 className="text-lg font-semibold tracking-tight text-white">
             Messages
           </h1>
           <button
             onClick={() => setShowModal(true)}
-            className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors text-lg text-gray-600 hover:text-gray-900"
+            className="w-8 h-8 rounded-full bg-[#1a1a24] hover:bg-[#2a2a35] flex items-center justify-center transition-colors text-lg text-gray-300 hover:text-white"
             title="New chat"
           >
             +
@@ -107,16 +107,16 @@ export default function ChatPage() {
         {/* Conversation list */}
         <div className="flex-1 overflow-y-auto">
           {loading ? (
-            <div className="flex items-center justify-center h-32 text-gray-400 text-sm">
+            <div className="flex items-center justify-center h-32 text-gray-500 text-sm">
               Loading...
             </div>
           ) : conversations.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-40 text-gray-400 text-sm gap-2">
+            <div className="flex flex-col items-center justify-center h-40 text-gray-500 text-sm gap-2">
               <span className="text-3xl">💬</span>
               <p>No conversations yet</p>
               <button
                 onClick={() => setShowModal(true)}
-                className="text-gray-500 hover:text-gray-800 underline text-xs"
+                className="text-gray-400 hover:text-white underline text-xs"
               >
                 Start one
               </button>
@@ -134,15 +134,15 @@ export default function ChatPage() {
       {/* Main chat area — always visible on md+, toggled on mobile */}
       <main
         className={`
-          flex-1 flex flex-col bg-white min-w-0
+          flex-1 flex flex-col bg-[#0d0d12] min-w-0
           ${!showSidebar ? "flex" : "hidden"} md:flex
         `}
       >
         {/* Mobile back button */}
-        <div className="md:hidden flex items-center px-4 py-2 border-b border-gray-200 bg-white">
+        <div className="md:hidden flex items-center px-4 py-2 border-b border-gray-800 bg-[#0d0d12]">
           <button
             onClick={() => setShowSidebar(true)}
-            className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
+            className="text-sm text-gray-400 hover:text-white flex items-center gap-1"
           >
             ← Back
           </button>
@@ -155,8 +155,8 @@ export default function ChatPage() {
           />
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center text-gray-300 gap-3">
-            <span className="text-6xl">✉️</span>
-            <p className="text-lg text-gray-400 text-center px-4">
+            <span className="text-6xl opacity-30">✉️</span>
+            <p className="text-lg text-gray-500 text-center px-4">
               Select a conversation to start chatting
             </p>
           </div>

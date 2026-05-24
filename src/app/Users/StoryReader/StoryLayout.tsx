@@ -94,7 +94,7 @@ export default function StoryLayout({ storyId, chapterId }: LayoutProps) {
       </div>
 
       {/* Main content */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto bg-[#0d0d12]">
         {chapterContent ? (
           <StoryReaderComponent ChapterContent={chapterContent} />
         ) : (

@@ -37,7 +37,7 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
     if (debounceRef.current) clearTimeout(debounceRef.current);
 
     if (!searchQuery.trim()) {
-      setSearchResults([]);
+      searchResults.length && setSearchResults([]);
       setSearching(false);
       return;
     }
@@ -121,21 +121,21 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-      <div className="bg-white border border-gray-300 rounded-2xl w-full max-w-md mx-4 overflow-hidden text-black">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#13131a] border border-gray-800 rounded-2xl w-full max-w-md mx-4 overflow-hidden text-white">
         {/* Header */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-300">
+        <div className="flex items-center justify-between px-5 py-4 border-b border-gray-800">
           <h2 className="text-sm font-semibold">New conversation</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-black transition-colors text-lg"
+            className="text-gray-400 hover:text-white transition-colors text-lg"
           >
             ✕
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-300">
+        <div className="flex border-b border-gray-800">
           {(["dm", "group"] as const).map((t) => (
             <button
               key={t}
@@ -143,8 +143,8 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
               className={`flex-1 py-3 text-sm transition-colors
                 ${
                   tab === t
-                    ? "text-black border-b-2 border-black"
-                    : "text-gray-400 hover:text-gray-700"
+                    ? "text-white border-b-2 border-white"
+                    : "text-gray-500 hover:text-gray-300"
                 }`}
             >
               {t === "dm" ? "Direct message" : "Group chat"}
@@ -160,8 +160,8 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder="Search by username..."
             autoFocus
-            className="w-full bg-gray-100 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-black
-              placeholder-gray-500 outline-none focus:border-gray-500 transition-colors"
+            className="w-full bg-[#0d0d12] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white
+              placeholder-gray-500 outline-none focus:border-gray-400 transition-colors"
           />
 
           {/* Group name (group tab only) */}
@@ -171,8 +171,8 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               placeholder="Group name..."
-              className="w-full mt-3 bg-gray-100 border border-gray-300 rounded-xl px-4 py-2.5 text-sm text-black
-                placeholder-gray-500 outline-none focus:border-gray-500 transition-colors"
+              className="w-full mt-3 bg-[#0d0d12] border border-gray-700 rounded-xl px-4 py-2.5 text-sm text-white
+                placeholder-gray-500 outline-none focus:border-gray-400 transition-colors"
             />
           )}
 
@@ -182,12 +182,12 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
               {selectedUsers.map((u) => (
                 <span
                   key={u._id}
-                  className="flex items-center gap-1.5 bg-gray-200 rounded-full px-3 py-1 text-xs text-black"
+                  className="flex items-center gap-1.5 bg-[#2a2a35] rounded-full px-3 py-1 text-xs text-white"
                 >
                   {u.username}
                   <button
                     onClick={() => toggleUser(u)}
-                    className="text-gray-400 hover:text-black"
+                    className="text-gray-400 hover:text-white"
                   >
                     ✕
                   </button>
@@ -203,7 +203,7 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
 
           {/* Results list — only shown when not searching and there are results */}
           {!searching && searchResults.length > 0 && (
-            <ul className="mt-3 border border-gray-300 rounded-xl overflow-hidden">
+            <ul className="mt-3 border border-gray-800 rounded-xl overflow-hidden">
               {searchResults.map((user) => {
                 const isSelected = !!selectedUsers.find(
                   (u) => u._id === user._id,
@@ -215,13 +215,13 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
                         tab === "dm" ? handleDM(user) : toggleUser(user)
                       }
                       disabled={loading}
-                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-100 transition-colors
-                        ${isSelected ? "bg-gray-200" : ""}`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#1a1a24] transition-colors
+                        ${isSelected ? "bg-[#1a1a24]" : ""}`}
                     >
-                      <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-xs font-semibold text-black flex-shrink-0">
+                      <div className="w-8 h-8 rounded-full bg-[#2a2a35] flex items-center justify-center text-xs font-semibold text-white flex-shrink-0">
                         {user.username[0]?.toUpperCase()}
                       </div>
-                      <span className="text-sm text-black">
+                      <span className="text-sm text-white">
                         {user.username}
                       </span>
                       {isSelected && (
@@ -248,8 +248,8 @@ export default function NewChatModal({ onClose, onCreated }: Props) {
               disabled={
                 loading || !groupName.trim() || selectedUsers.length < 2
               }
-              className="w-full mt-4 py-2.5 bg-black text-white text-sm font-medium rounded-xl
-                disabled:opacity-30 hover:bg-gray-800 transition-colors"
+              className="w-full mt-4 py-2.5 bg-white text-black text-sm font-medium rounded-xl
+                disabled:opacity-30 hover:bg-gray-200 transition-colors"
             >
               {loading ? "Creating..." : "Create group"}
             </button>

@@ -20,8 +20,8 @@ export default function RichTextEditor({
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
-        bulletList: { HTMLAttributes: { class: "list-disc ml-3" } },
-        orderedList: { HTMLAttributes: { class: "list-decimal ml-3" } },
+        bulletList: { HTMLAttributes: { class: "list-disc ml-4" } },
+        orderedList: { HTMLAttributes: { class: "list-decimal ml-4" } },
       }),
       TextAlign.configure({ types: ["heading", "paragraph"] }),
       Highlight,
@@ -29,8 +29,23 @@ export default function RichTextEditor({
     content,
     editorProps: {
       attributes: {
-        class:
-          "min-h-[300px] sm:min-h-[460px] bg-slate-50 border rounded-md py-3 px-3 sm:py-4 sm:px-4 text-sm sm:text-base leading-7 w-full focus:outline-none",
+        class: "prose-editor-dark",
+        style: [
+          "min-height: 360px",
+          "background: rgba(255,255,255,0.04)",
+          "border: 0.5px solid rgba(255,255,255,0.1)",
+          "border-radius: 14px",
+          "color: rgba(255,255,255,0.88)",
+          "padding: 20px 24px",
+          "font-family: 'DM Sans', sans-serif",
+          "font-size: 15px",
+          "line-height: 1.8",
+          "caret-color: #15b0b7",
+          "outline: none",
+          "width: 100%",
+          "box-sizing: border-box",
+          "transition: border-color 0.2s, background 0.2s",
+        ].join(";"),
       },
     },
     onUpdate: ({ editor }) => {

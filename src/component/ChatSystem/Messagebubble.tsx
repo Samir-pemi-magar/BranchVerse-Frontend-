@@ -35,7 +35,7 @@ export default function MessageBubble({
       >
         {/* Sender name (group chats only) */}
         {showSender && !isOwn && (
-          <span className="text-xs text-gray-400 mb-1 ml-1">
+          <span className="text-xs text-gray-500 mb-1 ml-1">
             {message.sender.username}
           </span>
         )}
@@ -45,7 +45,7 @@ export default function MessageBubble({
           {isOwn && onDelete && !message.isDeleted && (
             <button
               onClick={() => onDelete(message._id)}
-              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-400 hover:text-red-400 text-xs mb-1 flex-shrink-0"
+              className="opacity-0 group-hover:opacity-100 transition-opacity text-gray-500 hover:text-red-400 text-xs mb-1 flex-shrink-0"
               title="Delete"
             >
               ✕
@@ -57,8 +57,8 @@ export default function MessageBubble({
             className={`px-3 sm:px-4 py-2 rounded-2xl text-sm leading-relaxed break-words
     ${
       isOwn
-        ? "bg-[#FDDBB4] text-black rounded-br-sm" // 👈 warm skin/peach color
-        : "bg-gray-100 text-black rounded-bl-sm"
+        ? "bg-[#FDDBB4] text-black rounded-br-sm" // 👈 kept warm skin/peach color as it pops cleanly on dark bg
+        : "bg-[#1a1a24] text-white rounded-bl-sm"
     }
     ${message.isDeleted ? "italic opacity-40" : ""}
   `}
@@ -68,7 +68,7 @@ export default function MessageBubble({
         </div>
 
         {/* Timestamp */}
-        <span className="text-[10px] text-gray-400 mt-1 mx-1">
+        <span className="text-[10px] text-gray-500 mt-1 mx-1">
           {formatTime(message.createdAt)}
         </span>
       </div>
