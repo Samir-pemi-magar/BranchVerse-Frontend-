@@ -69,6 +69,14 @@ export default function StoryReaderComponent({
   const [showCommentInput, setShowCommentInput] = useState(false);
   const [chapterBookmarked, setChapterBookmarked] = useState(false);
   const [showReportModal, setShowReportModal] = useState(false);
+  const [isAuthor, setIsAuthor] = useState(false);
+
+  useEffect(() => {
+    if (!ChapterContent?.author) return;
+    const userId =
+      localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
+    setIsAuthor(userId === String(ChapterContent.author));
+  }, [ChapterContent?.author]);
 
   useEffect(() => {
     if (!ChapterContent?._id) return;
@@ -100,10 +108,6 @@ export default function StoryReaderComponent({
   if (!ChapterContent) {
     return <div className="p-10 text-red-400">No chapter loaded</div>;
   }
-
-  const isAuthor =
-    localStorage.getItem("userId") ??
-    sessionStorage.getItem("userId") === String(ChapterContent.author);
 
   const handleUpdateChapter = () => {
     const params = new URLSearchParams({
