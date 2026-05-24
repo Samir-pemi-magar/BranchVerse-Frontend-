@@ -77,8 +77,10 @@ export default function StoryReaderSidebar({
         src={coverSrc}
         alt={chapterContent?.title ?? "cover"}
         className="w-full h-full object-cover"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src = "/images/placeholder-cover.png";
+        }}
       />
-
       {/* Overlay */}
       <div className="absolute inset-0 bg-black/40 flex flex-col justify-end p-4 sm:p-6 gap-3">
         <span className="text-white font-bold text-base sm:text-lg">
