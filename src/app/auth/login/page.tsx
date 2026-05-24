@@ -457,15 +457,13 @@ export default function Login() {
                   fontFamily: "'DM Sans', sans-serif",
                 }}
                 onClick={() =>
-                  (window.location.href =
-                    "http://localhost:4000/api/auth/google")
+                  (window.location.href = `${process.env.NEXT_PUBLIC_BASEURL}/api/auth/google`)
                 }
                 role="button"
                 tabIndex={0}
                 onKeyDown={(e) =>
                   e.key === "Enter" &&
-                  (window.location.href =
-                    "http://localhost:4000/api/auth/google")
+                  (window.location.href = `${process.env.NEXT_PUBLIC_BASEURL}/api/auth/google`)
                 }
               >
                 <svg width="18" height="18" viewBox="0 0 48 48">
