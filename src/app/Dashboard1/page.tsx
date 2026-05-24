@@ -171,26 +171,36 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="flex flex-col items-center bg-white w-full">
-      {/* Hero */}
+    <div
+      className="flex flex-col items-center w-full"
+      style={{ background: "#0d0d12" }}
+    >
+      {/* ── Hero ──────────────────────────────────────────────────────────────── */}
       <section className="w-full flex flex-col md:flex-row items-center justify-between gap-8 lg:gap-16 px-6 sm:px-10 lg:px-24 py-12 md:py-16">
         <div className="flex flex-col gap-6 w-full md:max-w-[480px]">
-          <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-bold leading-tight tracking-tight">
+          <h1 className="text-4xl sm:text-5xl lg:text-[60px] font-bold leading-tight tracking-tight text-white">
             BranchVerse: A New Era of Storytelling
           </h1>
-          <p className="font-bold text-base sm:text-lg lg:text-[20px] text-[#837E7E] leading-7">
+          <p className="font-bold text-base sm:text-lg lg:text-[20px] text-gray-400 leading-7">
             Collaborate, create, and explore branching narratives. Dive into
             universes woven by a global community of writers and readers.
           </p>
           <div className="flex flex-wrap gap-3">
-            <button className="font-bold text-sm border-2 border-[#00B8AE] bg-white hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200">
+            <button
+              className="font-bold text-sm border-2 border-[#00B8AE] text-[#00B8AE] hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200"
+              style={{ background: "transparent" }}
+            >
               Start a Story
             </button>
-            <button className="font-bold text-sm border-2 border-[#00B8AE] bg-white hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200">
+            <button
+              className="font-bold text-sm border-2 border-[#00B8AE] text-[#00B8AE] hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200"
+              style={{ background: "transparent" }}
+            >
               Explore Stories
             </button>
           </div>
         </div>
+
         <div className="w-full md:w-[420px] lg:w-[500px] overflow-hidden rounded-2xl">
           <div
             ref={scrollerRef}
@@ -200,7 +210,10 @@ export default function Dashboard() {
             style={{ scrollbarWidth: "none" }}
           >
             {stories.length === 0 ? (
-              <div className="flex-shrink-0 min-w-full h-[260px] sm:h-[300px] bg-gray-100 rounded-2xl animate-pulse" />
+              <div
+                className="flex-shrink-0 min-w-full h-[260px] sm:h-[300px] rounded-2xl animate-pulse"
+                style={{ background: "#1a1a26" }}
+              />
             ) : (
               stories.map((story) => (
                 <div
@@ -212,7 +225,7 @@ export default function Dashboard() {
                     alt={story.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                   />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/30 to-transparent" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                   <p className="absolute bottom-4 left-4 text-white font-bold text-lg sm:text-xl leading-tight max-w-[90%]">
                     {story.title}
                   </p>
@@ -223,28 +236,42 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Feature Highlights */}
-      <section className="w-full bg-[#F9F9F9] py-16 px-6 sm:px-10 lg:px-16">
-        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-10">
+      {/* ── Feature Highlights ────────────────────────────────────────────────── */}
+      <section
+        className="w-full py-16 px-6 sm:px-10 lg:px-16"
+        style={{
+          background: "#13131c",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-10 text-white">
           Feature Highlights
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-10xl mx-auto">
           {trending.length === 0 ? (
-            <p className="text-gray-500 col-span-full text-center">
+            <p className="text-gray-600 col-span-full text-center">
               No trending stories available.
             </p>
           ) : (
             trending.map((story) => (
               <div
                 key={story._id}
-                className="border rounded-xl p-3 bg-white shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+                className="rounded-xl p-3 cursor-pointer transition-all duration-200 hover:border-[#00B8AE]/30"
+                style={{
+                  background: "#1a1a26",
+                  border: "1px solid rgba(255,255,255,0.08)",
+                  boxShadow: "0 2px 12px rgba(0,0,0,0.4)",
+                }}
               >
                 <img
                   src={coverUrl(story.cover)}
                   alt={story.title}
                   className="w-full h-[200px] sm:h-[220px] object-cover rounded-lg"
                 />
-                <h3 className="mt-3 font-bold text-base">{story.title}</h3>
+                <h3 className="mt-3 font-bold text-base text-white">
+                  {story.title}
+                </h3>
                 <p className="text-sm text-gray-500 line-clamp-2 mt-1">
                   {story.description}
                 </p>
@@ -252,7 +279,8 @@ export default function Dashboard() {
                   {story.tags?.filter(Boolean).map((tag, idx) => (
                     <span
                       key={idx}
-                      className="bg-yellow-100 text-yellow-800 px-2 py-0.5 rounded-full text-xs font-medium"
+                      className="px-2 py-0.5 rounded-full text-xs font-medium text-[#00B8AE]"
+                      style={{ background: "rgba(0,184,174,0.12)" }}
                     >
                       {tag}
                     </span>
@@ -264,14 +292,17 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Discover Stories */}
-      <section className="w-full py-16 px-6 sm:px-10 lg:px-16">
-        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-10">
+      {/* ── Discover Stories ──────────────────────────────────────────────────── */}
+      <section
+        className="w-full py-16 px-6 sm:px-10 lg:px-16"
+        style={{ background: "#0d0d12" }}
+      >
+        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-10 text-white">
           Discover Stories
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 max-w-10xl mx-auto">
           {discoverStories.length === 0 ? (
-            <p className="text-gray-500 col-span-full text-center">
+            <p className="text-gray-600 col-span-full text-center">
               No stories available.
             </p>
           ) : (
@@ -285,12 +316,12 @@ export default function Dashboard() {
                   alt={story.title}
                   className="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                 />
-                <div className="absolute inset-0 bg-black/30" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/25 to-transparent" />
                 <div className="absolute bottom-4 left-4 flex flex-col gap-1.5">
                   <p className="font-bold text-base sm:text-lg text-white leading-tight">
                     {story.title}
                   </p>
-                  <span className="rounded-full px-3 h-5 inline-flex items-center text-white bg-[#9C75DB] text-[10px] font-bold w-fit">
+                  <span className="rounded-full px-3 h-5 inline-flex items-center text-white bg-[#00B8AE] text-[10px] font-bold w-fit">
                     {story.branchesCount ?? 0} Branches
                   </span>
                 </div>
@@ -300,9 +331,16 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="w-full bg-[#E0FFFE] py-16 px-6 sm:px-10 lg:px-16">
-        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-12">
+      {/* ── How It Works ──────────────────────────────────────────────────────── */}
+      <section
+        className="w-full py-16 px-6 sm:px-10 lg:px-16"
+        style={{
+          background: "#13131c",
+          borderTop: "1px solid rgba(255,255,255,0.06)",
+          borderBottom: "1px solid rgba(255,255,255,0.06)",
+        }}
+      >
+        <h2 className="text-center font-bold text-2xl sm:text-3xl md:text-4xl mb-12 text-white">
           How It Works
         </h2>
         <div className="flex flex-col md:flex-row gap-12 md:gap-6 justify-center items-center md:items-start max-w-5xl mx-auto">
@@ -384,8 +422,8 @@ export default function Dashboard() {
                 <p className="font-bold text-2xl text-white">{num}</p>
               </div>
               {svg}
-              <p className="font-bold text-xl mt-3">{label}</p>
-              <p className="font-bold text-sm sm:text-base text-[#555] mt-3 leading-relaxed">
+              <p className="font-bold text-xl mt-3 text-white">{label}</p>
+              <p className="font-bold text-sm sm:text-base text-gray-500 mt-3 leading-relaxed">
                 {desc}
               </p>
             </div>
@@ -393,12 +431,13 @@ export default function Dashboard() {
         </div>
       </section>
 
-      {/* Community Stats */}
+      {/* ── Community Stats ───────────────────────────────────────────────────── */}
       <section
         ref={statsRef}
         className="w-full py-16 px-6 flex flex-col items-center gap-10"
+        style={{ background: "#0d0d12" }}
       >
-        <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl text-center">
+        <h2 className="font-bold text-2xl sm:text-3xl md:text-4xl text-center text-white">
           Join Our Thriving Community
         </h2>
         <div className="flex flex-col sm:flex-row gap-10 sm:gap-16 md:gap-24 items-center">
@@ -411,7 +450,7 @@ export default function Dashboard() {
               <p className="font-bold text-4xl sm:text-5xl text-[#00B8AE] font-mono tabular-nums">
                 {value}
               </p>
-              <p className="font-bold text-base sm:text-lg text-[#837E7E]">
+              <p className="font-bold text-base sm:text-lg text-gray-500">
                 {label}
               </p>
             </div>
