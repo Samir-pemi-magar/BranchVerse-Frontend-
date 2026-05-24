@@ -39,7 +39,7 @@ export interface Chapter {
   chapterNumber: number;
   isMainBranch: boolean;
   branchTitle: string | null;
-  author: string;
+  author: string | { _id: string; username: string }; // ← updated
   likes: number;
   views: number;
   branchCount?: number;
@@ -56,6 +56,14 @@ interface StoryReaderProps {
   ChapterContent: Chapter | null;
 }
 
+// ── helpers ──────────────────────────────────────────────
+const getAuthorId = (author: Chapter["author"]): string =>
+  typeof author === "object" ? author._id : author;
+
+const getAuthorName = (author: Chapter["author"]): string =>
+  typeof author === "object" ? author.username : author;
+// ─────────────────────────────────────────────────────────
+
 export default function StoryReaderComponent({
   ChapterContent,
 }: StoryReaderProps) {
@@ -71,11 +79,12 @@ export default function StoryReaderComponent({
   const [showReportModal, setShowReportModal] = useState(false);
   const [isAuthor, setIsAuthor] = useState(false);
 
+  // ── isAuthor check (uses _id from populated author) ──
   useEffect(() => {
     if (!ChapterContent?.author) return;
     const userId =
       localStorage.getItem("userId") ?? sessionStorage.getItem("userId");
-    setIsAuthor(userId === String(ChapterContent.author));
+    setIsAuthor(userId === getAuthorId(ChapterContent.author));
   }, [ChapterContent?.author]);
 
   useEffect(() => {
@@ -327,20 +336,27 @@ export default function StoryReaderComponent({
           {/* Author + tags + stats */}
           <div className="flex flex-col gap-4 -mt-1 sm:-mt-3">
             <div className="flex flex-wrap items-center gap-2 sm:gap-5">
+              {/* ── FIXED: show username instead of raw ID ── */}
               <span className="font-bold text-sm sm:text-base text-gray-200">
-                {ChapterContent.author}
+                {getAuthorName(ChapterContent.author)}
               </span>
-              <span className="hidden sm:block text-gray-600">|</span>
-              <div className="flex flex-wrap gap-2">
-                {ChapterContent.tags?.map((tag) => (
-                  <span
-                    key={tag}
-                    className="bg-white/8 text-gray-300 text-xs font-semibold px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/10"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
+
+              {/* ── FIXED: only render separator + tags if tags exist ── */}
+              {ChapterContent.tags && ChapterContent.tags.length > 0 && (
+                <>
+                  <span className="hidden sm:block text-gray-600">|</span>
+                  <div className="flex flex-wrap gap-2">
+                    {ChapterContent.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="bg-white/8 text-gray-300 text-xs font-semibold px-3 sm:px-4 py-1 sm:py-1.5 rounded-full border border-white/10"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* Stats */}
@@ -369,7 +385,6 @@ export default function StoryReaderComponent({
 
         {/* ── CONTENT ── */}
         <div className="flex flex-col w-full gap-6 sm:gap-10">
-          {/* Prose — override Tailwind prose defaults for dark bg */}
           <div
             className="prose prose-invert max-w-none text-sm sm:text-base prose-p:text-gray-300 prose-headings:text-white prose-strong:text-gray-100 prose-a:text-[#00B8AE]"
             dangerouslySetInnerHTML={{ __html: ChapterContent.content }}
@@ -461,7 +476,6 @@ export default function StoryReaderComponent({
             Comments ({comments.length})
           </h3>
 
-          {/* Comment input */}
           <div className="flex gap-2 sm:gap-3">
             <input
               value={commentText}
@@ -478,7 +492,6 @@ export default function StoryReaderComponent({
             </button>
           </div>
 
-          {/* Comment list */}
           <div className="flex flex-col gap-5 mt-1">
             {comments.length === 0 && (
               <span className="text-gray-600 text-sm">No comments yet.</span>
