@@ -164,10 +164,11 @@ export default function Dashboard() {
     return () => observer.disconnect();
   }, []);
 
-  const coverUrl = (cover: string) =>
-    cover && process.env.NEXT_PUBLIC_BASEURL
-      ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${cover}`
-      : "/images/placeholder-cover.png";
+  const coverUrl = (cover: string) => {
+    if (!cover) return "/images/placeholder-cover.png";
+    if (cover.startsWith("http")) return cover;
+    return `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${cover}`;
+  };
 
   return (
     <div className="flex flex-col items-center bg-white w-full">

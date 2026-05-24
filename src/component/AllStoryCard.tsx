@@ -118,7 +118,11 @@ const StoryCard: React.FC<StoryCardProps> = ({
         {/* Cover Image */}
         <div className="relative h-[180px] sm:h-[200px]">
           <img
-            src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+            src={
+              story.cover?.startsWith("http")
+                ? story.cover
+                : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+            }
             alt={story.title}
             className="absolute inset-0 w-full h-full object-cover z-0"
             loading="lazy"

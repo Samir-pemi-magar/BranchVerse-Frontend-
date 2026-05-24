@@ -2,6 +2,7 @@
 import { getPreferences } from "@/src/Services/authapi";
 import { GetPopularThisWeek } from "@/src/Services/storyApi";
 import { FaEye } from "react-icons/fa";
+import { coverUrl } from "../../../../Utils/coverUrl";
 import {
   GetAllStories,
   GetTrendingStories,
@@ -256,10 +257,7 @@ export default function Home() {
             className="flex overflow-x-auto snap-x snap-mandatory scroll-smooth py-4"
           >
             {stories.map((story) => {
-              const coverSrc =
-                story?.cover && process.env.NEXT_PUBLIC_BASEURL
-                  ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
-                  : "/images/placeholder-cover.png";
+              const coverSrc = coverUrl(story.cover);
 
               return (
                 <Link
@@ -330,7 +328,7 @@ export default function Home() {
                       </span>
                     )}
                     <img
-                      src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+                      src={coverUrl(story.cover)}
                       alt={story.title}
                       className="w-full h-[200px] sm:h-[250px] object-cover rounded-t-2xl"
                     />
@@ -415,7 +413,7 @@ export default function Home() {
                   className="flex flex-row items-center gap-3"
                 >
                   <img
-                    src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+                    src={coverUrl(story.cover)}
                     alt={story.title}
                     className="w-16 h-24 sm:w-20 sm:h-28 object-cover rounded-md flex-shrink-0"
                   />
@@ -460,7 +458,7 @@ export default function Home() {
               >
                 <div className="w-full h-[180px] sm:h-[200px] rounded-xl overflow-hidden bg-gray-100">
                   <img
-                    src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+                    src={coverUrl(story.cover)}
                     alt={story.title}
                     className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                   />
@@ -613,7 +611,7 @@ export default function Home() {
                     }
                   >
                     <img
-                      src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+                      src={coverUrl(story.cover)}
                       alt={story.title}
                       className="w-12 h-16 object-cover rounded-md flex-shrink-0"
                     />

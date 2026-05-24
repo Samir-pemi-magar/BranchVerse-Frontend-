@@ -98,7 +98,11 @@ const RecommendedStorycard: React.FC<RecommendedStoryCardProps> = ({
         {/* Cover image */}
         <div className="relative h-[180px] sm:h-[220px] rounded-lg overflow-hidden">
           <img
-            src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`}
+            src={
+              story.cover?.startsWith("http")
+                ? story.cover
+                : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+            }
             alt={story.title}
             className="w-full h-full object-cover"
             loading="lazy"

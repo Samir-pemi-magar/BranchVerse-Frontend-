@@ -1,6 +1,7 @@
 "use client";
 import { getPreferences } from "@/src/Services/authapi";
 import StoryCard from "@/src/component/AllStoryCard";
+import { coverUrl } from "../../../../Utils/coverUrl";
 import {
   GetAllStories,
   GetTrendingStories,
@@ -324,7 +325,7 @@ export default function Home() {
               aria-label={`Open ${trendingStories[currentTrendingIndex].title}`}
             >
               <img
-                src={`${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${trendingStories[currentTrendingIndex].cover}`}
+                src={coverUrl(trendingStories[currentTrendingIndex].cover)}
                 alt={trendingStories[currentTrendingIndex].title}
                 className="w-full h-full object-cover"
               />

@@ -31,6 +31,7 @@ import {
   FaEnvelope,
 } from "react-icons/fa";
 import router from "next/router";
+import { coverUrl } from "../../../../Utils/coverUrl";
 
 export interface Achievement {
   name: string;
@@ -780,10 +781,7 @@ export default function ProfilePage() {
                     )}
                     <div className="w-full aspect-[4/3] rounded-md overflow-hidden relative">
                       <img
-                        src={
-                          `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}` ||
-                          "/file.svg"
-                        }
+                        src={coverUrl(story.cover)}
                         alt={story.title}
                         className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                       />
@@ -851,7 +849,7 @@ export default function ProfilePage() {
                       <img
                         src={
                           branch.story?.cover
-                            ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${branch.story.cover}`
+                            ? coverUrl(branch.story.cover)
                             : "/file.svg"
                         }
                         alt={branch.story?.title}
@@ -959,7 +957,7 @@ export default function ProfilePage() {
                         <img
                           src={
                             chapter.story?.cover
-                              ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${chapter.story.cover}`
+                              ? coverUrl(chapter.story.cover)
                               : "/file.svg"
                           }
                           alt={chapter.title}
@@ -1025,10 +1023,7 @@ export default function ProfilePage() {
                       </button>
                       <div className="w-full aspect-[4/3] overflow-hidden">
                         <img
-                          src={
-                            `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}` ||
-                            "/file.svg"
-                          }
+                          src={coverUrl(story.cover)}
                           alt={story.title}
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
                         />

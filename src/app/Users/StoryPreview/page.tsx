@@ -85,10 +85,11 @@ export default function StoryPreview() {
   const [chapterHierarchy, setChapterHierarchy] = useState<ChapterNode[]>([]);
 
   // FIX: return undefined instead of "" so React omits the src attribute entirely
-  const coverSrc =
-    story?.cover && process.env.NEXT_PUBLIC_BASEURL
-      ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
-      : undefined;
+  const coverSrc = story?.cover
+    ? story.cover.startsWith("http")
+      ? story.cover
+      : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+    : undefined;
 
   useEffect(() => {
     const fetchPreferences = async () => {
@@ -439,10 +440,11 @@ export default function StoryPreview() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 w-full">
           {personalizedStories.map((story) => {
             // FIX: guard personalized story covers the same way
-            const storyCoverSrc =
-              story.cover && process.env.NEXT_PUBLIC_BASEURL
-                ? `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
-                : undefined;
+            const storyCoverSrc = story.cover
+              ? story.cover.startsWith("http")
+                ? story.cover
+                : `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/cover/${story.cover}`
+              : undefined;
 
             return (
               <Link
