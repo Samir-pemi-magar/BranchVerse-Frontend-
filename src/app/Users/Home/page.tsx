@@ -10,7 +10,7 @@ import {
   GetRecommendedStories,
   LikeStory,
 } from "@/src/Services/storyApi";
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import RecommendedStorycard from "@/src/component/RecommendedStorycard";
 import Link from "next/link";
@@ -260,6 +260,11 @@ export default function Home() {
     }, 3500);
     return () => clearInterval(interval);
   }, [stories, isHovered]);
+
+  const bookmarkedIds = useMemo(
+    () => new Set(bookmarkedStories.map((s) => s._id)),
+    [bookmarkedStories],
+  );
 
   return (
     <>
@@ -610,6 +615,7 @@ export default function Home() {
                   key={story._id}
                   story={story}
                   currentUserId={currentUserId}
+                  isBookmarked={bookmarkedIds.has(story._id)}
                 />
               ))}
             </div>

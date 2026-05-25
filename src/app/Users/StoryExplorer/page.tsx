@@ -9,6 +9,7 @@ import {
   GetPersonalizedStories,
   GetRecommendedStories,
   GetFilteredStories,
+  GetAllBookmarks,
 } from "@/src/Services/storyApi";
 import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
@@ -66,6 +67,8 @@ export default function StoryExplorer() {
   const [currentUserId, setCurrentUserId] = useState<string | undefined>(
     undefined,
   );
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+
   const [isFiltered, setIsFiltered] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -92,6 +95,15 @@ export default function StoryExplorer() {
     }
   }, []);
 
+  const fetchBookmarks = useCallback(async () => {
+    try {
+      const data = await GetAllBookmarks();
+      setBookmarkedIds(new Set((data.stories || []).map((s: Story) => s._id)));
+    } catch (err) {
+      console.error("Failed to fetch bookmarks", err);
+    }
+  }, []);
+
   const fetchTrending = useCallback(async () => {
     try {
       const data = await GetTrendingStories();
@@ -105,6 +117,7 @@ export default function StoryExplorer() {
   useEffect(() => {
     fetchAllStories();
     fetchTrending();
+    fetchBookmarks();
 
     const refresh = () => {
       if (!isFiltered) fetchAllStories();
@@ -118,7 +131,7 @@ export default function StoryExplorer() {
       clearInterval(interval);
       window.removeEventListener("focus", refresh);
     };
-  }, [fetchAllStories, fetchTrending, isFiltered]);
+  }, [fetchAllStories, fetchTrending, isFiltered, fetchBookmarks]);
 
   // ── Preferences (runs once) ──
   useEffect(() => {
@@ -919,6 +932,7 @@ export default function StoryExplorer() {
                         <StoryCard
                           story={story}
                           currentUserId={currentUserId}
+                          isBookmarked={bookmarkedIds.has(story._id)}
                         />
                       </div>
                     ))}
