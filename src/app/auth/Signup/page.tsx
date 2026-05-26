@@ -731,7 +731,116 @@ export default function Signup() {
 
             {/* RIGHT PANEL — unchanged */}
             <div className="hidden lg:flex flex-1 flex-col justify-center pl-14 pr-6 max-w-[460px]">
-              {/* ... your existing right panel ... */}
+              {/* Tagline */}
+              <h1 className="font-playfair text-[42px] font-bold leading-[1.2] text-white mb-5 tracking-[-1px]">
+                Where stories <br />
+                <span className="hero-gradient-signup">branch and bloom.</span>
+              </h1>
+              <p
+                className="text-[15px] font-light leading-[1.7] mb-10"
+                style={{ color: "rgba(255,255,255,0.38)" }}
+              >
+                Collaborate on living narratives, fork plotlines, and build
+                worlds with writers across the globe.
+              </p>
+
+              {/* Feature list */}
+              {[
+                {
+                  icon: "M12 2L4 7l8 5 8-5-8-5zM4 12l8 5 8-5M4 17l8 5 8-5",
+                  label: "Branching story trees",
+                  desc: "Fork any chapter and explore alternate timelines.",
+                },
+                {
+                  icon: "M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75",
+                  label: "Real-time co-authoring",
+                  desc: "Write together, live, with zero conflicts.",
+                },
+                {
+                  icon: "M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z",
+                  label: "Version history",
+                  desc: "Every draft saved. Roll back anytime.",
+                },
+              ].map(({ icon, label, desc }) => (
+                <div key={label} className="flex items-start gap-4 mb-6">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: "rgba(108,78,242,0.15)",
+                      border: "0.5px solid rgba(108,78,242,0.25)",
+                    }}
+                  >
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="url(#fg)"
+                      strokeWidth="1.8"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <defs>
+                        <linearGradient
+                          id="fg"
+                          x1="0%"
+                          y1="0%"
+                          x2="100%"
+                          y2="100%"
+                        >
+                          <stop offset="0%" stopColor="#6c4ef2" />
+                          <stop offset="100%" stopColor="#15b0b7" />
+                        </linearGradient>
+                      </defs>
+                      <path d={icon} />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-white mb-0.5">
+                      {label}
+                    </p>
+                    <p
+                      className="text-[13px] font-light"
+                      style={{ color: "rgba(255,255,255,0.35)" }}
+                    >
+                      {desc}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {/* Social proof */}
+              <div
+                className="mt-4 rounded-2xl px-5 py-4 flex items-center gap-4"
+                style={{
+                  background: "rgba(255,255,255,0.04)",
+                  border: "0.5px solid rgba(255,255,255,0.08)",
+                }}
+              >
+                <div className="flex -space-x-2">
+                  {["#6c4ef2", "#15b0b7", "#e5839a", "#EF9F27"].map(
+                    (color, i) => (
+                      <div
+                        key={i}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-white text-[11px] font-bold"
+                        style={{
+                          background: color,
+                          border: "2px solid #0d0d12",
+                        }}
+                      >
+                        {["A", "B", "C", "D"][i]}
+                      </div>
+                    ),
+                  )}
+                </div>
+                <p
+                  className="text-[13px] font-light"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  <span className="text-white font-medium">2,400+ writers</span>{" "}
+                  already shaping stories
+                </p>
+              </div>
             </div>
           </div>
         </div>

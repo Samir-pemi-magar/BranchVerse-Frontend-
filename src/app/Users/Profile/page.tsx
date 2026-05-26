@@ -6,6 +6,8 @@ import {
   GetUserAchievements,
   GetMyStories,
   GetMyBranches,
+  GetMyDrafts,
+  PublishDraft,
   GetFollowers,
   GetFollowing,
   ToggleFollow,
@@ -18,6 +20,7 @@ import {
   ToggleChapterBookmark,
   GetStoriesByUser,
   GetBranchesByUser,
+  DeleteChapter,
 } from "@/src/Services/storyApi";
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams } from "next/navigation";
@@ -94,6 +97,24 @@ interface Branch {
     tags: string[];
     branchesCount: number;
     author: { _id: string; username: string } | null;
+  } | null;
+}
+
+// ── NEW: Draft interface ──────────────────────────────────────────────────────
+interface Draft {
+  _id: string;
+  title: string;
+  content: string;
+  branchTitle?: string;
+  isMainBranch: boolean;
+  chapterNumber: number;
+  updatedAt: string;
+  createdAt: string;
+  storyId: {
+    _id: string;
+    title: string;
+    cover: string;
+    tags: string[];
   } | null;
 }
 
@@ -192,6 +213,13 @@ export default function ProfilePage() {
     BookmarkedChapter[]
   >([]);
 
+  // ── NEW draft state ────────────────────────────────────────────────────────
+  const [myDrafts, setMyDrafts] = useState<Draft[]>([]);
+  const [draftMenuId, setDraftMenuId] = useState<string | null>(null);
+  const [publishingDraftId, setPublishingDraftId] = useState<string | null>(
+    null,
+  );
+
   const [editForm, setEditForm] = useState({
     username: "",
     description: "",
@@ -210,7 +238,7 @@ export default function ProfilePage() {
   const [myBranches, setMyBranches] = useState<Branch[]>([]);
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    "stories" | "branched" | "bookmark"
+    "stories" | "branched" | "bookmark" | "drafts"
   >("stories");
 
   const [isOwnProfile, setIsOwnProfile] = useState(false);
@@ -254,6 +282,7 @@ export default function ProfilePage() {
             bookmarksData,
             followersData,
             followingData,
+            draftsData, // ✅ new
           ] = await Promise.allSettled([
             GetUserAchievements(),
             GetMyStories(),
@@ -261,6 +290,7 @@ export default function ProfilePage() {
             GetAllBookmarks(),
             GetFollowers(profileData._id),
             GetFollowing(profileData._id),
+            GetMyDrafts(), // ✅ new
           ]);
 
           if (achievementsData.status === "fulfilled")
@@ -285,6 +315,9 @@ export default function ProfilePage() {
             setFollowing(list);
             setFollowingCount(list.length);
           }
+          if (draftsData.status === "fulfilled")
+            // ✅ new
+            setMyDrafts(draftsData.value);
         } else if (viewingId) {
           const profileData = await GetPublicProfile(viewingId);
           setProfile(profileData);
@@ -322,7 +355,10 @@ export default function ProfilePage() {
   }, [viewingId]);
 
   useEffect(() => {
-    const handleClickOutside = () => setOpenMenuId(null);
+    const handleClickOutside = () => {
+      setOpenMenuId(null);
+      setDraftMenuId(null); // ✅ close draft menu on outside click too
+    };
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
@@ -364,6 +400,18 @@ export default function ProfilePage() {
       alert("Action failed");
     }
   };
+  const handleDeleteDraft = async (draftId: string) => {
+    if (!confirm("Delete this draft? This cannot be undone.")) return;
+    try {
+      await DeleteChapter(draftId);
+      setMyDrafts((prev) => prev.filter((d) => d._id !== draftId));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete draft");
+    } finally {
+      setDraftMenuId(null);
+    }
+  };
 
   const handleUnbookmark = async (id: string, type: "story" | "chapter") => {
     try {
@@ -378,6 +426,32 @@ export default function ProfilePage() {
       console.error(err);
       alert("Failed to remove bookmark");
     }
+  };
+
+  // ── NEW: publish draft from profile ───────────────────────────────────────
+  const handlePublishDraft = async (draftId: string) => {
+    if (!confirm("Publish this draft? It will become visible to everyone."))
+      return;
+    try {
+      setPublishingDraftId(draftId);
+      await PublishDraft(draftId);
+      setMyDrafts((prev) => prev.filter((d) => d._id !== draftId));
+    } catch (err) {
+      console.error(err);
+      alert("Failed to publish draft");
+    } finally {
+      setPublishingDraftId(null);
+      setDraftMenuId(null);
+    }
+  };
+
+  // ── NEW: navigate to write page to edit draft ──────────────────────────────
+  const handleEditDraft = (draft: Draft) => {
+    const storyId = draft.storyId?._id;
+    if (!storyId) return;
+    const params = new URLSearchParams({ storyId, draftId: draft._id });
+    if (!draft.isMainBranch) params.set("parentChapterId", "branch"); // adjust if you store parentChapterId on the draft
+    router.push(`/Users/Storycreate?${params.toString()}`);
   };
 
   const handleChange = (
@@ -486,9 +560,12 @@ export default function ProfilePage() {
     );
   }
 
+  // ✅ "drafts" tab only visible on own profile
   const availableTabs = (
-    isOwnProfile ? ["stories", "branched", "bookmark"] : ["stories", "branched"]
-  ) as ("stories" | "branched" | "bookmark")[];
+    isOwnProfile
+      ? ["stories", "branched", "bookmark", "drafts"]
+      : ["stories", "branched"]
+  ) as ("stories" | "branched" | "bookmark" | "drafts")[];
 
   return (
     <div style={{ background: "#0d0d12", minHeight: "100vh" }}>
@@ -501,7 +578,6 @@ export default function ProfilePage() {
             borderBottom: "1px solid rgba(255,255,255,0.06)",
           }}
         >
-          {/* Avatar */}
           <img
             src={profile?.profilePicture || "/file.svg"}
             alt="preview"
@@ -537,7 +613,6 @@ export default function ProfilePage() {
                 Logout
               </button>
 
-              {/* Follow button — public profile only */}
               {!isOwnProfile && (
                 <div className="mt-1">
                   <button
@@ -558,7 +633,6 @@ export default function ProfilePage() {
                 </div>
               )}
 
-              {/* Contact row */}
               <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-1">
                 {profile?.email && (
                   <a
@@ -610,7 +684,6 @@ export default function ProfilePage() {
               {profile?.description}
             </p>
 
-            {/* Edit button — own profile only */}
             {isOwnProfile && (
               <button
                 onClick={openEditModal}
@@ -649,7 +722,7 @@ export default function ProfilePage() {
                   xmlns="http://www.w3.org/2000/svg"
                 >
                   <path
-                    d="M8.75001 17.5663C9.32037 16.9845 10.0011 16.5222 10.7523 16.2067C11.5036 15.8912 12.3102 15.7287 13.125 15.7288H16.625C17.6523 15.7292 18.647 15.368 19.4348 14.7086C20.2225 14.0491 20.7531 13.1335 20.9335 12.1221C20.1135 11.8937 19.4048 11.3743 18.9401 10.661C18.4754 9.94782 18.2866 9.08969 18.409 8.24729C18.5313 7.40489 18.9565 6.63596 19.6049 6.08443C20.2533 5.5329 21.0805 5.23658 21.9316 5.25093C22.7828 5.26529 23.5995 5.58933 24.2289 6.16242C24.8584 6.7355 25.2574 7.51833 25.3513 8.36438C25.4452 9.21042 25.2275 10.0617 24.739 10.7588C24.2506 11.456 23.5248 11.9512 22.6975 12.1518C22.5035 13.625 21.7805 14.9775 20.6634 15.9572C19.5462 16.9369 18.1109 17.4771 16.625 17.4771H13.125C12.0904 17.4768 11.0892 17.8432 10.2991 18.5112C9.50902 19.1792 8.98125 20.1056 8.80951 21.1258C9.62793 21.3525 10.336 21.869 10.8018 22.5791C11.2676 23.2891 11.4594 24.1444 11.3414 24.9853C11.2233 25.8263 10.8035 26.5957 10.1603 27.1501C9.51698 27.7045 8.69406 28.0061 7.84487 27.9987C6.99567 27.9913 6.17813 27.6755 5.5446 27.1099C4.91106 26.5444 4.50474 25.7678 4.40136 24.9249C4.29798 24.082 4.50459 23.2303 4.98269 22.5284C5.4608 21.8266 6.17777 21.3225 7.00001 21.1101V6.88959C6.17518 6.67662 5.45634 6.17014 4.97823 5.46509C4.50012 4.76003 4.29556 3.9048 4.4029 3.05972C4.51024 2.21463 4.92211 1.4377 5.5613 0.874561C6.2005 0.311421 7.02313 0.000732422 7.87501 0.000732422C8.72689 0.000732422 9.54952 0.311421 10.1887 0.874561C10.8279 1.4377 11.2398 2.21463 11.3471 3.05972C11.4545 3.9048 11.2499 4.76003 10.7718 5.46509C10.2937 6.17014 9.57483 6.67662 8.75001 6.88959V17.5663ZM7.87501 5.24984C8.33914 5.24984 8.78426 5.06547 9.11245 4.73728C9.44063 4.40909 9.62501 3.96397 9.62501 3.49984C9.62501 3.03571 9.44063 2.59059 9.11245 2.26241C8.78426 1.93422 8.33914 1.74984 7.87501 1.74984C7.41088 1.74984 6.96576 1.93422 6.63757 2.26241C6.30938 2.59059 6.12501 3.03571 6.12501 3.49984C6.12501 3.96397 6.30938 4.40909 6.63757 4.73728C6.96576 5.06547 7.41088 5.24984 7.87501 5.24984ZM7.87501 26.2498C8.33914 26.2498 8.78426 26.0655 9.11245 25.7373C9.44063 25.4091 9.62501 24.964 9.62501 24.4998C9.62501 24.0357 9.44063 23.5906 9.11245 23.2624C8.78426 22.9342 8.33914 22.7498 7.87501 22.7498C7.41088 22.7498 6.96576 22.9342 6.63757 23.2624C6.30938 23.5906 6.12501 24.0357 6.12501 24.4998C6.12501 24.964 6.30938 25.4091 6.63757 25.7373C6.96576 26.0655 7.41088 26.2498 7.87501 26.2498ZM21.875 10.4998C22.3391 10.4998 22.7843 10.3155 23.1124 9.98728C23.4406 9.65909 23.625 9.21397 23.625 8.74984C23.625 8.28571 23.4406 7.8406 23.1124 7.51241C22.7843 7.18422 22.3391 6.99984 21.875 6.99984C21.4109 6.99984 20.9658 7.18422 20.6376 7.51241C20.3094 7.8406 20.125 8.28571 20.125 8.74984C20.125 9.21397 20.3094 9.65909 20.6376 9.98728C20.9658 10.3155 21.4109 10.4998 21.875 10.4998Z"
+                    d="M8.75001 17.5663C9.32037 16.9845 10.0011 16.5222 10.7523 16.2067C11.5036 15.8912 12.3102 15.7287 13.125 15.7288H16.625C17.6523 15.7292 18.647 15.368 19.4348 14.7086C20.2225 14.0491 20.7531 13.1335 20.9335 12.1221C20.1135 11.8937 19.4048 11.3743 18.9401 10.661C18.4754 9.94782 18.2866 9.08969 18.409 8.24729C18.5313 7.40489 18.9565 6.63596 19.6049 6.08443C20.2533 5.5329 21.0805 5.23658 21.9316 5.25093C22.7828 5.26529 23.5995 5.58933 24.2289 6.16242C24.8584 6.7355 25.2574 7.51833 25.3513 8.36438C25.4452 9.21042 25.2275 10.0617 24.739 10.7588C24.2506 11.456 23.5248 11.9512 22.6975 12.1518C22.5035 13.625 21.7805 14.9775 20.6634 15.9572C19.5462 16.9369 18.1109 17.4771 16.625 17.4771H13.125C12.0904 17.4768 11.0892 17.8432 10.2991 18.5112C9.50902 19.1792 8.98125 20.1056 8.80951 21.1258C9.62793 21.3525 10.336 21.869 10.8018 22.5791C11.2676 23.2891 11.4594 24.1444 11.3414 24.9853C11.2233 25.8263 10.8035 26.5957 10.1603 27.1501C9.51698 27.7045 8.69406 28.0061 7.84487 27.9987C6.99567 27.9913 6.17813 27.6755 5.5446 27.1099C4.91106 26.5444 4.50474 25.7678 4.40136 24.9249C4.29798 24.082 4.50459 23.2303 4.98269 22.5284C5.4608 21.8266 6.17777 21.3225 7.00001 21.1101V6.88959C6.17518 6.67662 5.45634 6.17014 4.97823 5.46509C4.50012 4.76003 4.29556 3.9048 4.4029 3.05972C4.51024 2.21463 4.92211 1.4377 5.5613 0.874561C6.2005 0.311421 7.02313 0.000732422 7.87501 0.000732422C8.72689 0.000732422 9.54952 0.311421 10.1887 0.874561C10.8279 1.4377 11.2398 2.21463 11.3471 3.05972C11.4545 3.9048 11.2499 4.76003 10.7718 5.46509C10.2937 6.17014 9.57483 6.67662 8.75001 6.88959V17.5663Z"
                     fill="#00B8AE"
                   />
                 </svg>
@@ -708,7 +781,6 @@ export default function ProfilePage() {
 
         {/* ── Tabs + Content ───────────────────────────────────────────────────────── */}
         <section className="flex flex-col lg:flex-row w-full max-w-[1200px] px-4 sm:px-6 justify-between gap-6 pb-10">
-          {/* Left: Tabs + Grid */}
           <div className="flex flex-col gap-5 flex-1 min-w-0">
             {/* Tab Bar */}
             <div
@@ -725,11 +797,31 @@ export default function ProfilePage() {
                       : "text-gray-500 hover:text-gray-300"
                   }`}
                 >
-                  {tab === "stories"
-                    ? "Stories"
-                    : tab === "branched"
-                      ? "Branched Works"
-                      : "Bookmark"}
+                  {tab === "stories" ? (
+                    "Stories"
+                  ) : tab === "branched" ? (
+                    "Branched Works"
+                  ) : tab === "drafts" ? (
+                    <span className="flex items-center gap-1.5">
+                      Drafts
+                      {myDrafts.length > 0 && (
+                        <span
+                          className="inline-flex items-center justify-center w-5 h-5 rounded-full text-[11px] font-bold"
+                          style={{
+                            background:
+                              activeTab === "drafts"
+                                ? "#00B8AE"
+                                : "rgba(0,184,174,0.2)",
+                            color: activeTab === "drafts" ? "#fff" : "#00B8AE",
+                          }}
+                        >
+                          {myDrafts.length}
+                        </span>
+                      )}
+                    </span>
+                  ) : (
+                    "Bookmark"
+                  )}
                 </button>
               ))}
             </div>
@@ -750,7 +842,6 @@ export default function ProfilePage() {
                       }
                       className="flex flex-col gap-2 cursor-pointer group relative"
                     >
-                      {/* Three-dot menu — own profile only */}
                       {isOwnProfile && (
                         <div className="absolute top-2 right-2 z-20">
                           <button
@@ -928,7 +1019,197 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* Bookmark Tab — own profile only */}
+            {/* ── Drafts Tab ✅ NEW ────────────────────────────────────────────────── */}
+            {activeTab === "drafts" && isOwnProfile && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+                {myDrafts.length === 0 ? (
+                  <div className="col-span-full flex flex-col items-center justify-center py-16 gap-3 text-center">
+                    <svg
+                      className="w-12 h-12 text-gray-700"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={1.5}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"
+                      />
+                      <polyline points="17 21 17 13 7 13 7 21" />
+                      <polyline points="7 3 7 8 15 8" />
+                    </svg>
+                    <p className="font-semibold text-gray-600 text-[16px]">
+                      No drafts yet.
+                    </p>
+                    <p className="text-gray-700 text-[13px]">
+                      Chapters you save as drafts will appear here.
+                    </p>
+                  </div>
+                ) : (
+                  myDrafts.map((draft) => (
+                    <div
+                      key={draft._id}
+                      className="flex flex-col gap-2 rounded-md overflow-hidden border border-white/10 relative"
+                      style={{ background: "#13131c" }}
+                    >
+                      {/* Draft badge */}
+                      <div className="absolute top-2 left-2 z-10">
+                        <span
+                          className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wide"
+                          style={{
+                            background: "rgba(0,184,174,0.15)",
+                            color: "#00B8AE",
+                            border: "0.5px solid rgba(0,184,174,0.3)",
+                          }}
+                        >
+                          Draft
+                        </span>
+                      </div>
+
+                      {/* Three-dot menu */}
+                      <div className="absolute top-2 right-2 z-20">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setDraftMenuId(
+                              draftMenuId === draft._id ? null : draft._id,
+                            );
+                          }}
+                          className="w-8 h-8 flex items-center justify-center rounded-full bg-black/50 text-white hover:bg-black/70 transition-colors"
+                        >
+                          ⋮
+                        </button>
+                        {draftMenuId === draft._id && (
+                          <div
+                            className="absolute right-0 mt-2 w-36 rounded-md shadow-xl border border-white/10 z-30"
+                            style={{ background: "#1a1a26" }}
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            {/* Edit */}
+                            <button
+                              onClick={() => {
+                                handleEditDraft(draft);
+                                setDraftMenuId(null);
+                              }}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white/5 hover:text-white transition-colors flex items-center gap-2"
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                              </svg>
+                              Edit
+                            </button>
+                            {/* Publish */}
+                            <button
+                              onClick={() => handlePublishDraft(draft._id)}
+                              disabled={publishingDraftId === draft._id}
+                              className="w-full text-left px-4 py-2 text-sm text-[#00B8AE] hover:bg-white/5 transition-colors flex items-center gap-2 disabled:opacity-50"
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <line x1="22" y1="2" x2="11" y2="13" />
+                                <polygon points="22 2 15 22 11 13 2 9 22 2" />
+                              </svg>
+                              {publishingDraftId === draft._id
+                                ? "Publishing…"
+                                : "Publish"}
+                            </button>
+                            <button
+                              onClick={() => handleDeleteDraft(draft._id)}
+                              className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5 transition-colors flex items-center gap-2"
+                            >
+                              <svg
+                                width="13"
+                                height="13"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                              >
+                                <polyline points="3 6 5 6 21 6" />
+                                <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                                <path d="M10 11v6M14 11v6" />
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                              </svg>
+                              Delete
+                            </button>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Cover image from parent story */}
+                      <div className="w-full aspect-[4/3] overflow-hidden">
+                        <img
+                          src={
+                            draft.storyId?.cover
+                              ? coverUrl(draft.storyId.cover)
+                              : "/file.svg"
+                          }
+                          alt={draft.title}
+                          className="w-full h-full object-cover opacity-60"
+                        />
+                      </div>
+
+                      {/* Info */}
+                      <div className="flex flex-col gap-1 px-3 pb-3 pt-1">
+                        <span className="font-bold text-[15px] leading-tight line-clamp-1 text-white">
+                          {draft.title || "Untitled Draft"}
+                        </span>
+                        {!draft.isMainBranch && draft.branchTitle && (
+                          <span className="text-[12px] text-[#00B8AE] font-medium">
+                            &ldquo;{draft.branchTitle}&rdquo;
+                          </span>
+                        )}
+                        <span className="text-[12px] text-gray-500">
+                          {draft.isMainBranch ? "Main chapter" : "Branch"} ·{" "}
+                          {draft.storyId?.title || "Unknown Story"}
+                        </span>
+                        <span className="text-[11px] text-gray-600 mt-0.5">
+                          Last edited{" "}
+                          {new Date(draft.updatedAt).toLocaleDateString(
+                            undefined,
+                            { month: "short", day: "numeric", year: "numeric" },
+                          )}
+                        </span>
+                        <div className="flex flex-wrap gap-1 mt-1">
+                          {draft.storyId?.tags?.slice(0, 2).map((tag) => (
+                            <span
+                              key={tag}
+                              className="text-xs font-semibold px-2 py-0.5 rounded-full text-gray-400"
+                              style={{ background: "#1e1e2e" }}
+                            >
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+
+            {/* Bookmark Tab */}
             {activeTab === "bookmark" && isOwnProfile && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {bookmarkedStories.length + bookmarkedChapters.length === 0 ? (

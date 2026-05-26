@@ -1,9 +1,24 @@
 "use client";
 
 import RichTextEditor from "@/src/component/Richtexteditor";
-import { WriteStory } from "@/src/Services/storyApi";
+import {
+  WriteStory,
+  GetMyDrafts,
+  PublishDraft,
+  UpdateChapter,
+} from "@/src/Services/storyApi";
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+
+interface Draft {
+  _id: string;
+  title: string;
+  content: string;
+  branchTitle?: string;
+  isMainBranch: boolean;
+  updatedAt: string;
+  storyId?: { title: string };
+}
 
 export default function CreateStoryPage() {
   const searchParams = useSearchParams();
@@ -11,26 +26,50 @@ export default function CreateStoryPage() {
 
   const storyId = searchParams.get("storyId");
   const parentChapterId = searchParams.get("parentChapterId") || undefined;
+  const draftIdParam = searchParams.get("draftId") || undefined;
 
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [branchTitle, setBranchTitle] = useState("My Branch");
   const [loading, setLoading] = useState(false);
   const [published, setPublished] = useState(false);
+  const [draftSaved, setDraftSaved] = useState(false);
+  const [activeDraftId, setActiveDraftId] = useState<string | null>(
+    draftIdParam || null,
+  );
+  const [authorized, setAuthorized] = useState<boolean | null>(null);
+  const [myDrafts, setMyDrafts] = useState<Draft[]>([]);
+  const [showDrafts, setShowDrafts] = useState(false);
+  const [draftsLoading, setDraftsLoading] = useState(false);
 
-  // ✅ Authorization state
-  const [authorized, setAuthorized] = useState<boolean | null>(null); // null = still checking
+  // Load draft content if draftId is in the URL
+  useEffect(() => {
+    if (!draftIdParam) return;
+    async function loadDraft() {
+      try {
+        const drafts: Draft[] = await GetMyDrafts();
+        const draft = drafts.find((d) => d._id === draftIdParam);
+        if (draft) {
+          setTitle(draft.title);
+          setContent(draft.content);
+          if (draft.branchTitle) setBranchTitle(draft.branchTitle);
+          setActiveDraftId(draft._id);
+        }
+      } catch {
+        // silent — draft may have been deleted
+      }
+    }
+    loadDraft();
+  }, [draftIdParam]);
 
   useEffect(() => {
     if (!storyId) return;
 
-    // Branches: anyone can write, skip ownership check
     if (parentChapterId) {
       setAuthorized(true);
       return;
     }
 
-    // Main chapter: verify current user is the story author
     async function checkOwnership() {
       try {
         const currentUserId =
@@ -46,9 +85,7 @@ export default function CreateStoryPage() {
 
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASEURL}/api/stories/${storyId}`,
-          {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
-          },
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
         );
 
         if (!res.ok) {
@@ -57,7 +94,6 @@ export default function CreateStoryPage() {
         }
 
         const data = await res.json();
-
         if (data.disabled) {
           setAuthorized(false);
           return;
@@ -65,7 +101,6 @@ export default function CreateStoryPage() {
 
         const authorId =
           typeof data.author === "object" ? data.author._id : data.author;
-
         setAuthorized(authorId === currentUserId);
       } catch {
         setAuthorized(false);
@@ -75,11 +110,109 @@ export default function CreateStoryPage() {
     checkOwnership();
   }, [storyId, parentChapterId]);
 
-  if (!storyId) {
-    return <p className="p-10 text-red-500">Story ID missing</p>;
-  }
+  const fetchDrafts = async () => {
+    setDraftsLoading(true);
+    try {
+      const drafts: Draft[] = await GetMyDrafts();
+      // Show only drafts for this story
+      setMyDrafts(
+        drafts.filter((d: Draft) => {
+          if (!storyId) return true;
+          const sid =
+            typeof d.storyId === "object"
+              ? (d.storyId as { _id?: string })?._id
+              : d.storyId;
+          return sid === storyId;
+        }),
+      );
+    } catch {
+      setMyDrafts([]);
+    } finally {
+      setDraftsLoading(false);
+    }
+  };
 
-  // ✅ Still checking
+  const handleSaveDraft = async () => {
+    if (loading) return;
+    try {
+      setLoading(true);
+
+      if (activeDraftId) {
+        // Update existing draft
+        await UpdateChapter(activeDraftId, {
+          title,
+          content,
+          branchTitle: parentChapterId ? branchTitle : undefined,
+        });
+      } else {
+        // Create new draft
+        const res = await WriteStory({
+          storyId: storyId!,
+          title,
+          content,
+          parentChapterId,
+          branchTitle: parentChapterId ? branchTitle : undefined,
+          isDraft: true,
+        });
+        if (res.chapterId) setActiveDraftId(res.chapterId);
+      }
+
+      setDraftSaved(true);
+      setTimeout(() => setDraftSaved(false), 2500);
+    } catch (err: unknown) {
+      if (err instanceof Error) alert("Error: " + err.message);
+      else alert("Unexpected error: " + JSON.stringify(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (loading) return;
+    try {
+      setLoading(true);
+
+      if (activeDraftId) {
+        // Publishing a draft that was already saved
+        await PublishDraft(activeDraftId);
+      } else {
+        // Direct publish (no draft save first)
+        await WriteStory({
+          storyId: storyId!,
+          title,
+          content,
+          parentChapterId,
+          branchTitle: parentChapterId ? branchTitle : undefined,
+          isDraft: false,
+        });
+      }
+
+      setActiveDraftId(null);
+      setPublished(true);
+      setTimeout(() => {
+        setPublished(false);
+        setTitle("");
+        setContent("");
+        if (parentChapterId) setBranchTitle("My Branch");
+      }, 3000);
+    } catch (err: unknown) {
+      if (err instanceof Error) alert("Error: " + err.message);
+      else alert("Unexpected error: " + JSON.stringify(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadDraftIntoEditor = (draft: Draft) => {
+    setTitle(draft.title);
+    setContent(draft.content);
+    if (draft.branchTitle) setBranchTitle(draft.branchTitle);
+    setActiveDraftId(draft._id);
+    setShowDrafts(false);
+  };
+
+  if (!storyId) return <p className="p-10 text-red-500">Story ID missing</p>;
+
   if (authorized === null) {
     return (
       <div
@@ -94,7 +227,6 @@ export default function CreateStoryPage() {
     );
   }
 
-  // ✅ Not authorized
   if (!authorized) {
     return (
       <div
@@ -142,32 +274,6 @@ export default function CreateStoryPage() {
     );
   }
 
-  const handlePublish = async () => {
-    if (loading) return;
-    try {
-      setLoading(true);
-      await WriteStory({
-        storyId,
-        title,
-        content,
-        parentChapterId,
-        branchTitle: parentChapterId ? branchTitle : undefined,
-      });
-      setPublished(true);
-      setTimeout(() => {
-        setPublished(false);
-        setTitle("");
-        setContent("");
-        if (parentChapterId) setBranchTitle("My Branch");
-      }, 3000);
-    } catch (err: unknown) {
-      if (err instanceof Error) alert("Error: " + err.message);
-      else alert("Unexpected error: " + JSON.stringify(err));
-    } finally {
-      setLoading(false);
-    }
-  };
-
   return (
     <>
       <style>{`
@@ -183,14 +289,16 @@ export default function CreateStoryPage() {
           from { opacity:0; transform:translateY(24px); }
           to { opacity:1; transform:translateY(0); }
         }
-        @keyframes pulse-glow {
-          0%, 100% { box-shadow: 0 0 0 0 rgba(108,78,242,0.3); }
-          50% { box-shadow: 0 0 0 8px rgba(108,78,242,0); }
-        }
         @keyframes success-pop {
           0% { transform: scale(0.8); opacity:0; }
           60% { transform: scale(1.05); }
           100% { transform: scale(1); opacity:1; }
+        }
+        @keyframes draft-fade {
+          0% { opacity:0; transform:translateY(-6px); }
+          15% { opacity:1; transform:translateY(0); }
+          80% { opacity:1; }
+          100% { opacity:0; }
         }
 
         .orb-1 { animation: orb-drift 14s ease-in-out infinite alternate; }
@@ -198,6 +306,7 @@ export default function CreateStoryPage() {
         .orb-3 { animation: orb-drift 14s ease-in-out infinite alternate; animation-delay: -9s; }
         .card-in { animation: slide-up 0.55s cubic-bezier(0.22,1,0.36,1) both; }
         .success-pop { animation: success-pop 0.4s cubic-bezier(0.22,1,0.36,1) both; }
+        .draft-toast { animation: draft-fade 2.5s ease both; }
 
         .noise {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
@@ -237,31 +346,6 @@ export default function CreateStoryPage() {
         .editor-dark .ProseMirror mark { background: rgba(108,78,242,0.35); color: #fff; border-radius: 3px; padding: 0 2px; }
         .editor-dark .ProseMirror ul, .editor-dark .ProseMirror ol { padding-left: 1.5rem; color: rgba(255,255,255,0.8); }
 
-        .menubar-dark {
-          background: rgba(255,255,255,0.04);
-          border: 0.5px solid rgba(255,255,255,0.1);
-          border-radius: 10px;
-          padding: 6px 8px;
-          display: flex;
-          flex-wrap: wrap;
-          gap: 2px;
-          margin-bottom: 8px;
-        }
-        .menubar-dark button {
-          background: transparent;
-          border: none;
-          color: rgba(255,255,255,0.45);
-          padding: 6px 8px;
-          border-radius: 6px;
-          cursor: pointer;
-          transition: all 0.15s;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-        }
-        .menubar-dark button:hover { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.85); }
-        .menubar-dark button[data-active="true"] { background: rgba(108,78,242,0.3); color: #957bda; }
-
         .title-input::placeholder { color: rgba(255,255,255,0.18); }
         .branch-input::placeholder { color: rgba(255,255,255,0.2); }
 
@@ -280,6 +364,31 @@ export default function CreateStoryPage() {
         .publish-btn:disabled { opacity: 0.5; cursor: not-allowed; }
         .publish-btn:not(:disabled):hover { opacity: 0.88; transform: translateY(-1px); }
         .publish-btn:not(:disabled):active { transform: scale(0.99); }
+
+        .draft-btn {
+          background: rgba(255,255,255,0.06);
+          border: 0.5px solid rgba(255,255,255,0.12);
+          color: rgba(255,255,255,0.65);
+          transition: all 0.15s;
+        }
+        .draft-btn:hover:not(:disabled) {
+          background: rgba(255,255,255,0.1);
+          color: rgba(255,255,255,0.85);
+        }
+        .draft-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .draft-item {
+          background: rgba(255,255,255,0.04);
+          border: 0.5px solid rgba(255,255,255,0.08);
+          border-radius: 12px;
+          padding: 12px 14px;
+          cursor: pointer;
+          transition: all 0.15s;
+        }
+        .draft-item:hover {
+          background: rgba(108,78,242,0.1);
+          border-color: rgba(108,78,242,0.3);
+        }
       `}</style>
 
       <div
@@ -326,6 +435,36 @@ export default function CreateStoryPage() {
           />
         </div>
         <div className="noise fixed inset-0 z-[1] opacity-[0.03] pointer-events-none" />
+
+        {/* Draft saved toast */}
+        {draftSaved && (
+          <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 draft-toast">
+            <div
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-white"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                border: "0.5px solid rgba(255,255,255,0.15)",
+                backdropFilter: "blur(12px)",
+              }}
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#15b0b7"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z" />
+                <polyline points="17 21 17 13 7 13 7 21" />
+                <polyline points="7 3 7 8 15 8" />
+              </svg>
+              Draft saved
+            </div>
+          </div>
+        )}
 
         {/* Success overlay */}
         {published && (
@@ -390,8 +529,92 @@ export default function CreateStoryPage() {
                 className="text-sm font-medium"
                 style={{ color: "rgba(255,255,255,0.55)" }}
               >
-                Publishing your story…
+                {loading ? "Saving…" : ""}
               </p>
+            </div>
+          </div>
+        )}
+
+        {/* Drafts panel overlay */}
+        {showDrafts && (
+          <div
+            className="fixed inset-0 z-40 flex"
+            onClick={() => setShowDrafts(false)}
+          >
+            <div
+              className="ml-auto w-full max-w-[380px] h-full flex flex-col"
+              style={{
+                background: "#111118",
+                borderLeft: "0.5px solid rgba(255,255,255,0.08)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div
+                className="flex items-center justify-between px-5 py-4 border-b"
+                style={{ borderColor: "rgba(255,255,255,0.07)" }}
+              >
+                <p className="text-sm font-medium text-white">Saved Drafts</p>
+                <button
+                  onClick={() => setShowDrafts(false)}
+                  className="text-sm transition-opacity hover:opacity-70"
+                  style={{ color: "rgba(255,255,255,0.4)" }}
+                >
+                  ✕
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-3">
+                {draftsLoading ? (
+                  <div className="flex items-center justify-center py-10">
+                    <div
+                      className="w-6 h-6 rounded-full border-2 border-transparent animate-spin"
+                      style={{ borderTopColor: "#6c4ef2" }}
+                    />
+                  </div>
+                ) : myDrafts.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-10 gap-2">
+                    <p
+                      className="text-sm"
+                      style={{ color: "rgba(255,255,255,0.3)" }}
+                    >
+                      No drafts for this story yet.
+                    </p>
+                  </div>
+                ) : (
+                  myDrafts.map((draft) => (
+                    <div
+                      key={draft._id}
+                      className="draft-item"
+                      onClick={() => loadDraftIntoEditor(draft)}
+                    >
+                      <p className="text-sm font-medium text-white truncate">
+                        {draft.title || "Untitled draft"}
+                      </p>
+                      <p
+                        className="text-xs mt-0.5"
+                        style={{ color: "rgba(255,255,255,0.3)" }}
+                      >
+                        {draft.isMainBranch
+                          ? "Main chapter"
+                          : `Branch: ${draft.branchTitle || "Untitled"}`}
+                        {" · "}
+                        {new Date(draft.updatedAt).toLocaleDateString()}
+                      </p>
+                      {activeDraftId === draft._id && (
+                        <span
+                          className="inline-block mt-1.5 text-[10px] px-2 py-0.5 rounded-full font-medium"
+                          style={{
+                            background: "rgba(108,78,242,0.25)",
+                            color: "#957bda",
+                            border: "0.5px solid rgba(108,78,242,0.4)",
+                          }}
+                        >
+                          Currently editing
+                        </span>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -401,17 +624,45 @@ export default function CreateStoryPage() {
           <div className="card-in">
             {/* Header */}
             <div className="mb-8 flex flex-col gap-2">
-              <div className="flex items-center gap-2 mb-1">
-                <span
-                  className="text-xs font-medium px-3 py-1 rounded-full"
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className="text-xs font-medium px-3 py-1 rounded-full"
+                    style={{
+                      background: "rgba(108,78,242,0.2)",
+                      color: "#957bda",
+                      border: "0.5px solid rgba(108,78,242,0.3)",
+                    }}
+                  >
+                    {parentChapterId ? "🌿 New Branch" : "📖 New Chapter"}
+                  </span>
+                  {activeDraftId && (
+                    <span
+                      className="text-xs font-medium px-3 py-1 rounded-full"
+                      style={{
+                        background: "rgba(21,176,183,0.15)",
+                        color: "#15b0b7",
+                        border: "0.5px solid rgba(21,176,183,0.3)",
+                      }}
+                    >
+                      Draft
+                    </span>
+                  )}
+                </div>
+                <button
+                  onClick={() => {
+                    setShowDrafts(true);
+                    fetchDrafts();
+                  }}
+                  className="text-xs px-3 py-1.5 rounded-xl transition-all hover:opacity-80"
                   style={{
-                    background: "rgba(108,78,242,0.2)",
-                    color: "#957bda",
-                    border: "0.5px solid rgba(108,78,242,0.3)",
+                    background: "rgba(255,255,255,0.06)",
+                    border: "0.5px solid rgba(255,255,255,0.1)",
+                    color: "rgba(255,255,255,0.5)",
                   }}
                 >
-                  {parentChapterId ? "🌿 New Branch" : "📖 New Chapter"}
-                </span>
+                  View drafts
+                </button>
               </div>
               <h1 className="font-playfair text-3xl sm:text-4xl font-bold text-white tracking-tight">
                 {parentChapterId ? "Branch the Story" : "Write a Chapter"}
@@ -434,7 +685,7 @@ export default function CreateStoryPage() {
                 border: "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
-              {/* Branch title (only for branches) */}
+              {/* Branch title */}
               {parentChapterId && (
                 <div className="flex flex-col gap-2">
                   <label
@@ -494,24 +745,33 @@ export default function CreateStoryPage() {
               </div>
 
               {/* Footer row */}
-              <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center justify-between pt-2 flex-wrap gap-3">
                 <p
                   className="text-xs"
                   style={{ color: "rgba(255,255,255,0.2)" }}
                 >
                   {content.replace(/<[^>]*>/g, "").length} characters
                 </p>
-                <button
-                  onClick={handlePublish}
-                  disabled={loading || !title.trim() || !content.trim()}
-                  className="publish-btn font-dm text-white font-medium text-sm px-7 py-3 rounded-xl transition-all duration-200"
-                >
-                  {loading
-                    ? "Publishing…"
-                    : parentChapterId
-                      ? "Publish Branch"
-                      : "Publish Chapter"}
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={handleSaveDraft}
+                    disabled={loading || !title.trim()}
+                    className="draft-btn font-dm text-sm px-5 py-3 rounded-xl font-medium"
+                  >
+                    {activeDraftId ? "Update draft" : "Save draft"}
+                  </button>
+                  <button
+                    onClick={handlePublish}
+                    disabled={loading || !title.trim() || !content.trim()}
+                    className="publish-btn font-dm text-white font-medium text-sm px-7 py-3 rounded-xl transition-all duration-200"
+                  >
+                    {loading
+                      ? "Publishing…"
+                      : parentChapterId
+                        ? "Publish Branch"
+                        : "Publish Chapter"}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
