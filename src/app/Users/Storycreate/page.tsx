@@ -45,29 +45,29 @@ export default function CreateStoryPage() {
     null,
   );
 
-  // Fetch parent chapter title and auto-set branch title
   useEffect(() => {
-    if (!parentChapterId) return;
+    if (!parentChapterId || !storyId) return;
 
     async function fetchParentChapter() {
       try {
         const token =
           localStorage.getItem("token") ?? sessionStorage.getItem("token");
+        // ✅ Use the correct read endpoint that matches your backend
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASEURL}/api/chapters/${parentChapterId}`,
+          `${process.env.NEXT_PUBLIC_BASEURL}/api/chapters/read/${storyId}/${parentChapterId}`,
           { headers: token ? { Authorization: `Bearer ${token}` } : {} },
         );
         if (!res.ok) return;
         const data = await res.json();
         setParentChapterTitle(data.title);
-        setBranchTitle(data.title); // auto-set branch title from parent
+        setBranchTitle(data.title);
       } catch {
         // silent
       }
     }
 
     fetchParentChapter();
-  }, [parentChapterId]);
+  }, [parentChapterId, storyId]);
 
   // Load draft content if draftId is in the URL
   useEffect(() => {
