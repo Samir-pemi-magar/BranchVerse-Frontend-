@@ -1,10 +1,12 @@
 "use client";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axiosInstance from "@/src/Services/axiosinstance";
+import PreferencesModal from "@/src/component/PreferencesModal";
 
 export default function GoogleSuccess() {
   const router = useRouter();
+  const [showPreferences, setShowPreferences] = useState(false);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -16,11 +18,9 @@ export default function GoogleSuccess() {
       return;
     }
 
-    // Store token just like regular login
     localStorage.setItem("token", token);
     if (userId) localStorage.setItem("userId", userId);
 
-    // Check if user has preferences
     axiosInstance
       .get("/api/auth/preferences")
       .then((res) => {
@@ -28,7 +28,7 @@ export default function GoogleSuccess() {
           !res.data?.preferences ||
           res.data.preferences.genres.length === 0
         ) {
-          router.push("/auth/preferences"); // or show modal
+          setShowPreferences(true); // show modal instead of redirecting
         } else {
           router.push("/Users/Home");
         }
@@ -39,8 +39,18 @@ export default function GoogleSuccess() {
   }, []);
 
   return (
-    <div className="flex items-center justify-center min-h-screen">
-      <p className="text-xl">Signing you in with Google...</p>
-    </div>
+    <>
+      <div className="flex items-center justify-center min-h-screen">
+        <p className="text-xl">Signing you in with Google...</p>
+      </div>
+
+      <PreferencesModal
+        isOpen={showPreferences}
+        onClose={() => {
+          setShowPreferences(false);
+          router.push("/Users/Home");
+        }}
+      />
+    </>
   );
 }
