@@ -153,11 +153,19 @@ export default function Navbar() {
   const [message, setMessage] = useState("");
   const [issueType, setIssueType] = useState("");
   const [sending, setSending] = useState(false);
+  const [toast, setToast] = useState<{
+    message: string;
+    type: "success" | "error";
+  } | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [profilePicture, setProfilePicture] = useState<string | null>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
+  const showToast = (message: string, type: "success" | "error") => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -216,11 +224,13 @@ export default function Navbar() {
         },
       );
       if (res.ok) {
-        alert("Message sent! Your report is anonymous.");
+        showToast("Message sent! Your report is anonymous.", "success");
         resetSupportForm();
-      } else alert("Failed to send. Please try again.");
+      } else {
+        showToast("Failed to send. Please try again.", "error");
+      }
     } catch {
-      alert("Network error. Please try again.");
+      showToast("Network error. Please try again.", "error");
     } finally {
       setSending(false);
     }
@@ -452,6 +462,51 @@ export default function Navbar() {
               </div>
             )}
           </div>
+        </div>
+      )}
+      {/* Toast notification */}
+      {toast && (
+        <div
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[999] flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium text-white shadow-xl"
+          style={{
+            background:
+              toast.type === "success"
+                ? "rgba(0,184,174,0.15)"
+                : "rgba(239,68,68,0.15)",
+            border: `0.5px solid ${toast.type === "success" ? "rgba(0,184,174,0.4)" : "rgba(239,68,68,0.4)"}`,
+            backdropFilter: "blur(12px)",
+            animation: "slide-up 0.3s ease",
+          }}
+        >
+          {toast.type === "success" ? (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#00B8AE"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <polyline points="20 6 9 17 4 12" />
+            </svg>
+          ) : (
+            <svg
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#ef4444"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <line x1="18" y1="6" x2="6" y2="18" />
+              <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+          )}
+          {toast.message}
         </div>
       )}
     </div>
