@@ -34,7 +34,9 @@ export default function ChatPage() {
 
   useEffect(() => {
     attachToken();
-    socket.connect();
+    if (!socket.connected) {
+      socket.connect();
+    }
     return () => {
       socket.disconnect();
     };

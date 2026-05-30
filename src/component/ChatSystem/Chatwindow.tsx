@@ -42,27 +42,48 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
     setMessages([]);
     setPage(1);
     setLoading(true);
+
+    const join = () => {
+      socket.emit("joinRoom", conversation._id);
+    };
+
+    // Join immediately if connected, otherwise wait for connection
+    if (socket.connected) {
+      join();
+    } else {
+      socket.once("connect", join);
+    }
+
     fetchMessages(1);
 
-    socket.emit("joinRoom", conversation._id);
-
-    socket.on("messageReceived", (msg: Message) => {
+    const handleMessage = (msg: Message) => {
       setMessages((prev) => {
         if (prev.find((m) => m._id === msg._id)) return prev;
         return [...prev, msg];
       });
-    });
+      onMessageSent(); // also refresh sidebar on incoming message
+    };
 
-    socket.on("typing", (roomId: string) => {
+    const handleTyping = (roomId: string) => {
       if (roomId === conversation._id) setIsTyping(true);
-    });
-    socket.on("stopTyping", () => setIsTyping(false));
+    };
+
+    const handleStopTyping = () => setIsTyping(false);
+
+    socket.on("messageReceived", handleMessage);
+    socket.on("typing", handleTyping);
+    socket.on("stopTyping", handleStopTyping);
+
+    // Fallback poll every 5 seconds in case socket misses events
+    const poll = setInterval(() => fetchMessages(1, true), 5000);
 
     return () => {
       socket.emit("leaveRoom", conversation._id);
-      socket.off("messageReceived");
-      socket.off("typing");
-      socket.off("stopTyping");
+      socket.off("connect", join);
+      socket.off("messageReceived", handleMessage);
+      socket.off("typing", handleTyping);
+      socket.off("stopTyping", handleStopTyping);
+      clearInterval(poll);
     };
   }, [conversation._id]);
 
@@ -70,11 +91,21 @@ export default function ChatWindow({ conversation, onMessageSent }: Props) {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const fetchMessages = async (p: number) => {
+  const fetchMessages = async (p: number, silent = false) => {
     try {
       const data = await getMessages(conversation._id, p);
       if (p === 1) {
-        setMessages(data.messages);
+        setMessages((prev) => {
+          if (silent) {
+            // Merge: add any new messages not already in state
+            const existingIds = new Set(prev.map((m) => m._id));
+            const newOnes = data.messages.filter(
+              (m: Message) => !existingIds.has(m._id),
+            );
+            return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+          }
+          return data.messages;
+        });
       } else {
         setMessages((prev) => [...data.messages, ...prev]);
       }
