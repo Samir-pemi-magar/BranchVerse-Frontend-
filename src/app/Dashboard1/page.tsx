@@ -1,5 +1,6 @@
 "use client";
 import { GetAllStories, GetTrendingStories } from "@/src/Services/storyApi";
+import router from "next/router";
 import {
   useEffect,
   useState,
@@ -189,12 +190,14 @@ export default function Dashboard() {
             <button
               className="font-bold text-sm border-2 border-[#00B8AE] text-[#00B8AE] hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200"
               style={{ background: "transparent" }}
+              onClick={() => router.push("/auth/login")}
             >
               Start a Story
             </button>
             <button
               className="font-bold text-sm border-2 border-[#00B8AE] text-[#00B8AE] hover:bg-[#00B8AE] hover:text-white px-6 h-11 rounded-md cursor-pointer transition duration-200"
               style={{ background: "transparent" }}
+              onClick={() => router.push("/auth/login")}
             >
               Explore Stories
             </button>
@@ -456,7 +459,10 @@ export default function Dashboard() {
             </div>
           ))}
         </div>
-        <button className="px-10 py-4 rounded-lg bg-[#00B8AE] font-bold text-base sm:text-lg text-white transition hover:bg-[#00938d]">
+        <button
+          className="px-10 py-4 rounded-lg bg-[#00B8AE] font-bold text-base sm:text-lg text-white transition hover:bg-[#00938d]"
+          onClick={() => router.push("/auth/login")}
+        >
           Join the Community
         </button>
       </section>
