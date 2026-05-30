@@ -25,7 +25,6 @@ export default function Signup() {
   const [showConfirm, setShowConfirm] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [registeredEmail, setRegisteredEmail] = useState("");
-  const [resendCooldown, setResendCooldown] = useState(0);
 
   const router = useRouter();
   const password = watch("password", "");
@@ -44,34 +43,6 @@ export default function Signup() {
     return "bg-[#1D9E75]";
   };
 
-  const startResendCooldown = () => {
-    setResendCooldown(60);
-    const interval = setInterval(() => {
-      setResendCooldown((prev) => {
-        if (prev <= 1) {
-          clearInterval(interval);
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-  };
-
-  const handleResend = async () => {
-    if (resendCooldown > 0) return;
-    const toastId = toast.loading("Resending verification email...");
-    try {
-      // Call your resend API here, e.g.:
-      // await resendVerificationApi({ email: registeredEmail });
-      toast.success("Verification email sent! Check your inbox.", {
-        id: toastId,
-      });
-      startResendCooldown();
-    } catch {
-      toast.error("Failed to resend. Please try again.", { id: toastId });
-    }
-  };
-
   const onSubmit = async (data: SignupFormData) => {
     const toastId = toast.loading("Signing you up...");
     try {
@@ -80,11 +51,14 @@ export default function Signup() {
         email: data.email,
         password: data.password,
       });
-      if (res.status === 201) {
-        toast.success("Account created!", { id: toastId });
+      if (res.status === 200 || res.status === 201) {
+        toast.success("Verification email sent! Check your inbox.", {
+          id: toastId,
+        });
         setRegisteredEmail(data.email);
         setVerificationSent(true);
-        startResendCooldown();
+      } else {
+        toast.error("Something went wrong. Please try again.", { id: toastId });
       }
     } catch (error: unknown) {
       const err = error as {
@@ -131,13 +105,11 @@ export default function Signup() {
     </svg>
   );
 
-  // ─── Verification screen ───────────────────────────────────────────
   const VerificationScreen = () => (
     <div
       className="flex flex-col items-center text-center py-4"
       style={{ animation: "bvSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) both" }}
     >
-      {/* Icon */}
       <div className="relative mb-6">
         <div
           className="w-20 h-20 rounded-full flex items-center justify-center"
@@ -172,7 +144,6 @@ export default function Signup() {
             <polyline points="22,6 12,13 2,6" />
           </svg>
         </div>
-        {/* Check badge */}
         <div
           className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full flex items-center justify-center"
           style={{ background: "#1D9E75", border: "2px solid #0d0d12" }}
@@ -205,35 +176,13 @@ export default function Signup() {
         {registeredEmail}
       </p>
       <p
-        className="text-[13px] font-light leading-[1.6] max-w-[300px] mb-8"
+        className="text-[13px] font-light leading-[1.6] max-w-[300px] mb-10"
         style={{ color: "rgba(255,255,255,0.3)" }}
       >
         Click the link in the email to activate your account. It may take a
-        minute to arrive — check your spam folder if you don`t see it.
+        minute to arrive — check your spam folder if you don&apos;t see it.
       </p>
 
-      {/* Resend */}
-      <p
-        className="text-[13px] mb-1"
-        style={{ color: "rgba(255,255,255,0.25)" }}
-      >
-        Didn`t receive it?
-      </p>
-      <button
-        onClick={handleResend}
-        disabled={resendCooldown > 0}
-        className="text-[13px] font-medium mb-8 bg-transparent border-none cursor-pointer transition-opacity duration-150"
-        style={{
-          color: resendCooldown > 0 ? "rgba(149,123,218,0.4)" : "#957bda",
-          cursor: resendCooldown > 0 ? "default" : "pointer",
-        }}
-      >
-        {resendCooldown > 0
-          ? `Resend in ${resendCooldown}s`
-          : "Resend verification email"}
-      </button>
-
-      {/* Back to login */}
       <button
         onClick={() => router.push("/auth/login")}
         className="w-full h-[52px] rounded-xl flex items-center justify-center gap-2 text-sm transition-all duration-200"
@@ -389,7 +338,6 @@ export default function Signup() {
                 border: "0.5px solid rgba(255,255,255,0.1)",
               }}
             >
-              {/* Brand header — always visible */}
               {!verificationSent && (
                 <div className="mb-7">
                   <div className="flex items-center gap-[10px] mb-6">
@@ -430,7 +378,6 @@ export default function Signup() {
               ) : (
                 <>
                   <form onSubmit={handleSubmit(onSubmit)}>
-                    {/* ... all your existing form fields unchanged ... */}
                     <div className="flex flex-col gap-4 mb-4">
                       {/* Username */}
                       <div className="flex flex-col gap-1.5">
@@ -731,9 +678,8 @@ export default function Signup() {
               )}
             </div>
 
-            {/* RIGHT PANEL — unchanged */}
+            {/* RIGHT PANEL */}
             <div className="hidden lg:flex flex-1 flex-col justify-center pl-14 pr-6 max-w-[460px]">
-              {/* Tagline */}
               <h1 className="font-playfair text-[42px] font-bold leading-[1.2] text-white mb-5 tracking-[-1px]">
                 Where stories <br />
                 <span className="hero-gradient-signup">branch and bloom.</span>
@@ -746,7 +692,6 @@ export default function Signup() {
                 worlds with writers across the globe.
               </p>
 
-              {/* Feature list */}
               {[
                 {
                   icon: "M12 2L4 7l8 5 8-5-8-5zM4 12l8 5 8-5M4 17l8 5 8-5",
@@ -811,7 +756,6 @@ export default function Signup() {
                 </div>
               ))}
 
-              {/* Social proof */}
               <div
                 className="mt-4 rounded-2xl px-5 py-4 flex items-center gap-4"
                 style={{

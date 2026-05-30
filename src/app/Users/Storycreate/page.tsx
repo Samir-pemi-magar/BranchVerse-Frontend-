@@ -45,7 +45,7 @@ export default function CreateStoryPage() {
     null,
   );
 
-  // Fetch parent chapter title
+  // Fetch parent chapter title and auto-set branch title
   useEffect(() => {
     if (!parentChapterId) return;
 
@@ -60,6 +60,7 @@ export default function CreateStoryPage() {
         if (!res.ok) return;
         const data = await res.json();
         setParentChapterTitle(data.title);
+        setBranchTitle(data.title); // auto-set branch title from parent
       } catch {
         // silent
       }
@@ -368,7 +369,6 @@ export default function CreateStoryPage() {
         .editor-dark .ProseMirror ul, .editor-dark .ProseMirror ol { padding-left: 1.5rem; color: rgba(255,255,255,0.8); }
 
         .title-input::placeholder { color: rgba(255,255,255,0.18); }
-        .branch-input::placeholder { color: rgba(255,255,255,0.2); }
 
         .publish-btn {
           background: linear-gradient(130deg, #6c4ef2 0%, #15b0b7 100%);
@@ -706,61 +706,39 @@ export default function CreateStoryPage() {
                 border: "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
-              {/* Branch section */}
+              {/* Branch section — read-only, no input */}
               {parentChapterId && (
-                <div className="flex flex-col gap-3">
-                  {/* Parent chapter info bar */}
-                  {parentChapterTitle && (
-                    <div
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
-                      style={{
-                        background: "rgba(21,176,183,0.08)",
-                        border: "0.5px solid rgba(21,176,183,0.2)",
-                      }}
+                <div className="flex flex-col gap-2">
+                  <label
+                    className="text-xs font-medium tracking-wide uppercase"
+                    style={{ color: "rgba(255,255,255,0.35)" }}
+                  >
+                    Branching From
+                  </label>
+                  <div
+                    className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm"
+                    style={{
+                      background: "rgba(21,176,183,0.08)",
+                      border: "0.5px solid rgba(21,176,183,0.2)",
+                    }}
+                  >
+                    <svg
+                      width="14"
+                      height="14"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="#15b0b7"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
                     >
-                      <svg
-                        width="14"
-                        height="14"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="#15b0b7"
-                        strokeWidth="2"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M12 2L4 7l8 5 8-5-8-5z" />
-                        <path d="M4 12l8 5 8-5" />
-                        <path d="M4 17l8 5 8-5" />
-                      </svg>
-                      <span style={{ color: "rgba(255,255,255,0.4)" }}>
-                        Branching from:
-                      </span>
-                      <span className="font-medium text-white truncate">
-                        {parentChapterTitle}
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Branch name input */}
-                  <div className="flex flex-col gap-2">
-                    <label
-                      className="text-xs font-medium tracking-wide uppercase"
-                      style={{ color: "rgba(255,255,255,0.35)" }}
-                    >
-                      Branch Name
-                    </label>
-                    <input
-                      type="text"
-                      value={branchTitle}
-                      onChange={(e) => setBranchTitle(e.target.value)}
-                      placeholder="Give your branch a name..."
-                      className="branch-input w-full h-11 rounded-xl px-4 text-sm text-white outline-none transition-all"
-                      style={{
-                        background: "rgba(255,255,255,0.05)",
-                        border: "0.5px solid rgba(255,255,255,0.1)",
-                        fontFamily: "'DM Sans', sans-serif",
-                      }}
-                    />
+                      <path d="M12 2L4 7l8 5 8-5-8-5z" />
+                      <path d="M4 12l8 5 8-5" />
+                      <path d="M4 17l8 5 8-5" />
+                    </svg>
+                    <span className="font-medium text-white truncate">
+                      {parentChapterTitle ?? "Loading..."}
+                    </span>
                   </div>
                 </div>
               )}
