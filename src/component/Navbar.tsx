@@ -188,6 +188,15 @@ export default function Navbar() {
     [router],
   );
 
+  // ✅ Hard navigation to own profile — forces full remount and clears any
+  // stale "?id=" param that was set when viewing someone else's profile.
+  const goToOwnProfile = () => {
+    setMenuOpen(false);
+    setSearchOpen(false);
+    setShowSupport(false);
+    window.location.href = "/Users/Profile";
+  };
+
   const resetSupportForm = () => {
     setMessage("");
     setIssueType("");
@@ -307,7 +316,6 @@ export default function Navbar() {
                   sending={sending}
                   onSend={handleSend}
                   textareaClass="w-full h-[100px] rounded-md p-2 mb-2 outline-none resize-none text-sm text-gray-200 placeholder-gray-600"
-                  // style applied via inline in the component itself via passed class
                 />
               </div>
             )}
@@ -336,10 +344,8 @@ export default function Navbar() {
               </button>
             )}
           </div>
-          <div
-            className="cursor-pointer"
-            onClick={() => navigate("/Users/Profile")}
-          >
+          {/* ✅ Hard nav to own profile */}
+          <div className="cursor-pointer" onClick={goToOwnProfile}>
             <ProfileAvatar size="lg" picture={profilePicture} />
           </div>
         </div>
@@ -353,10 +359,8 @@ export default function Navbar() {
           >
             {searchOpen ? <CloseIcon size={20} /> : <SearchIcon />}
           </button>
-          <div
-            className="cursor-pointer"
-            onClick={() => navigate("/Users/Profile")}
-          >
+          {/* ✅ Hard nav to own profile */}
+          <div className="cursor-pointer" onClick={goToOwnProfile}>
             <ProfileAvatar size="sm" picture={profilePicture} />
           </div>
           <button

@@ -13,99 +13,15 @@ interface SignupFormData {
   confirmPassword: string;
 }
 
-export default function Signup() {
-  const {
-    register,
-    handleSubmit,
-    watch,
-    formState: { errors, isSubmitting },
-  } = useForm<SignupFormData>();
-
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirm, setShowConfirm] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [registeredEmail, setRegisteredEmail] = useState("");
-
-  const router = useRouter();
-  const password = watch("password", "");
-
-  const getStrength = (pwd: string) =>
-    pwd.length < 6 ? 1 : pwd.length < 10 ? 2 : 4;
-
-  const getStrengthLabel = (pwd: string) =>
-    pwd.length < 6 ? "Weak" : pwd.length < 10 ? "Medium" : "Strong";
-
-  const getBarClass = (i: number, pwd: string) => {
-    const strength = getStrength(pwd);
-    if (i >= strength) return "";
-    if (strength === 1) return "bg-[#E24B4A]";
-    if (strength === 2) return "bg-[#EF9F27]";
-    return "bg-[#1D9E75]";
-  };
-
-  const onSubmit = async (data: SignupFormData) => {
-    const toastId = toast.loading("Signing you up...");
-    try {
-      const res = await signupApi({
-        username: data.username,
-        email: data.email,
-        password: data.password,
-      });
-      if (res.status === 200 || res.status === 201) {
-        toast.success("Verification email sent! Check your inbox.", {
-          id: toastId,
-        });
-        setRegisteredEmail(data.email);
-        setVerificationSent(true);
-      } else {
-        toast.error("Something went wrong. Please try again.", { id: toastId });
-      }
-    } catch (error: unknown) {
-      const err = error as {
-        response?: { data?: { message?: string; msg?: string } };
-      };
-      toast.error(
-        err.response?.data?.message ||
-          err.response?.data?.msg ||
-          "Signup failed. Please try again.",
-        { id: toastId },
-      );
-    }
-  };
-
-  const EyeOpen = () => (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
-      <circle cx="12" cy="12" r="3" />
-    </svg>
-  );
-
-  const EyeOff = () => (
-    <svg
-      width="16"
-      height="16"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-      <line x1="1" y1="1" x2="23" y2="23" />
-    </svg>
-  );
-
-  const VerificationScreen = () => (
+// ─── Moved OUTSIDE Signup so React never remounts it on re-render ───
+function VerificationScreen({
+  email,
+  onBack,
+}: {
+  email: string;
+  onBack: () => void;
+}) {
+  return (
     <div
       className="flex flex-col items-center text-center py-4"
       style={{ animation: "bvSlideUp 0.5s cubic-bezier(0.22,1,0.36,1) both" }}
@@ -173,7 +89,7 @@ export default function Signup() {
         We sent a verification link to
       </p>
       <p className="text-sm font-medium mb-5" style={{ color: "#957bda" }}>
-        {registeredEmail}
+        {email}
       </p>
       <p
         className="text-[13px] font-light leading-[1.6] max-w-[300px] mb-10"
@@ -184,7 +100,7 @@ export default function Signup() {
       </p>
 
       <button
-        onClick={() => router.push("/auth/login")}
+        onClick={onBack}
         className="w-full h-[52px] rounded-xl flex items-center justify-center gap-2 text-sm transition-all duration-200"
         style={{
           background: "rgba(255,255,255,0.05)",
@@ -209,6 +125,108 @@ export default function Signup() {
       </button>
     </div>
   );
+}
+
+// ─── SVG helpers also moved outside to avoid recreation on every render ───
+function EyeOpen() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function EyeOff() {
+  return (
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+      <line x1="1" y1="1" x2="23" y2="23" />
+    </svg>
+  );
+}
+
+// ─── Strength helpers ───
+function getStrength(pwd: string) {
+  return pwd.length < 6 ? 1 : pwd.length < 10 ? 2 : 4;
+}
+
+function getStrengthLabel(pwd: string) {
+  return pwd.length < 6 ? "Weak" : pwd.length < 10 ? "Medium" : "Strong";
+}
+
+function getBarClass(i: number, pwd: string) {
+  const strength = getStrength(pwd);
+  if (i >= strength) return "";
+  if (strength === 1) return "bg-[#E24B4A]";
+  if (strength === 2) return "bg-[#EF9F27]";
+  return "bg-[#1D9E75]";
+}
+
+// ─── Main component ───
+export default function Signup() {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { errors, isSubmitting },
+  } = useForm<SignupFormData>();
+
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+
+  const router = useRouter();
+  const password = watch("password", "");
+
+  const onSubmit = async (data: SignupFormData) => {
+    const toastId = toast.loading("Signing you up...");
+    try {
+      const res = await signupApi({
+        username: data.username,
+        email: data.email,
+        password: data.password,
+      });
+      if (res.status === 200 || res.status === 201) {
+        toast.success("Verification email sent! Check your inbox.", {
+          id: toastId,
+        });
+        setRegisteredEmail(data.email);
+        setVerificationSent(true);
+      } else {
+        toast.error("Something went wrong. Please try again.", { id: toastId });
+      }
+    } catch (error: unknown) {
+      const err = error as {
+        response?: { data?: { message?: string; msg?: string } };
+      };
+      toast.error(
+        err.response?.data?.message ||
+          err.response?.data?.msg ||
+          "Signup failed. Please try again.",
+        { id: toastId },
+      );
+    }
+  };
 
   return (
     <>
@@ -374,7 +392,10 @@ export default function Signup() {
               )}
 
               {verificationSent ? (
-                <VerificationScreen />
+                <VerificationScreen
+                  email={registeredEmail}
+                  onBack={() => router.push("/auth/login")}
+                />
               ) : (
                 <>
                   <form onSubmit={handleSubmit(onSubmit)}>

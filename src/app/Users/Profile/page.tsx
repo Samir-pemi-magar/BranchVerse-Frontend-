@@ -100,7 +100,6 @@ interface Branch {
   } | null;
 }
 
-// ── NEW: Draft interface ──────────────────────────────────────────────────────
 interface Draft {
   _id: string;
   title: string;
@@ -213,7 +212,6 @@ export default function ProfilePage() {
     BookmarkedChapter[]
   >([]);
 
-  // ── NEW draft state ────────────────────────────────────────────────────────
   const [myDrafts, setMyDrafts] = useState<Draft[]>([]);
   const [draftMenuId, setDraftMenuId] = useState<string | null>(null);
   const [publishingDraftId, setPublishingDraftId] = useState<string | null>(
@@ -254,7 +252,7 @@ export default function ProfilePage() {
     type: "followers" | "following";
   }>({ open: false, type: "followers" });
 
-  // ── Data fetching ─────────────────────────────────────────────────────────────
+  // ── Data fetching ──────────────────────────────────────────────────────────
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -268,6 +266,7 @@ export default function ProfilePage() {
           // not logged in
         }
 
+        // ✅ Fix: no viewingId means own profile; also treat viewingId === ownId as own
         const own = !viewingId || viewingId === ownId;
         setIsOwnProfile(own);
 
@@ -282,7 +281,7 @@ export default function ProfilePage() {
             bookmarksData,
             followersData,
             followingData,
-            draftsData, // ✅ new
+            draftsData,
           ] = await Promise.allSettled([
             GetUserAchievements(),
             GetMyStories(),
@@ -290,7 +289,7 @@ export default function ProfilePage() {
             GetAllBookmarks(),
             GetFollowers(profileData._id),
             GetFollowing(profileData._id),
-            GetMyDrafts(), // ✅ new
+            GetMyDrafts(),
           ]);
 
           if (achievementsData.status === "fulfilled")
@@ -315,9 +314,7 @@ export default function ProfilePage() {
             setFollowing(list);
             setFollowingCount(list.length);
           }
-          if (draftsData.status === "fulfilled")
-            // ✅ new
-            setMyDrafts(draftsData.value);
+          if (draftsData.status === "fulfilled") setMyDrafts(draftsData.value);
         } else if (viewingId) {
           const profileData = await GetPublicProfile(viewingId);
           setProfile(profileData);
@@ -357,13 +354,13 @@ export default function ProfilePage() {
   useEffect(() => {
     const handleClickOutside = () => {
       setOpenMenuId(null);
-      setDraftMenuId(null); // ✅ close draft menu on outside click too
+      setDraftMenuId(null);
     };
     window.addEventListener("click", handleClickOutside);
     return () => window.removeEventListener("click", handleClickOutside);
   }, []);
 
-  // ── Handlers ──────────────────────────────────────────────────────────────────
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const openEditModal = () => {
     if (!profile) return;
     setEditForm({
@@ -400,6 +397,7 @@ export default function ProfilePage() {
       alert("Action failed");
     }
   };
+
   const handleDeleteDraft = async (draftId: string) => {
     if (!confirm("Delete this draft? This cannot be undone.")) return;
     try {
@@ -428,7 +426,6 @@ export default function ProfilePage() {
     }
   };
 
-  // ── NEW: publish draft from profile ───────────────────────────────────────
   const handlePublishDraft = async (draftId: string) => {
     if (!confirm("Publish this draft? It will become visible to everyone."))
       return;
@@ -445,12 +442,11 @@ export default function ProfilePage() {
     }
   };
 
-  // ── NEW: navigate to write page to edit draft ──────────────────────────────
   const handleEditDraft = (draft: Draft) => {
     const storyId = draft.storyId?._id;
     if (!storyId) return;
     const params = new URLSearchParams({ storyId, draftId: draft._id });
-    if (!draft.isMainBranch) params.set("parentChapterId", "branch"); // adjust if you store parentChapterId on the draft
+    if (!draft.isMainBranch) params.set("parentChapterId", "branch");
     router.push(`/Users/Storycreate?${params.toString()}`);
   };
 
@@ -537,7 +533,7 @@ export default function ProfilePage() {
     setUserListModal({ open: true, type });
   };
 
-  // ── Render ────────────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   if (loading) {
     return (
       <div
@@ -560,7 +556,7 @@ export default function ProfilePage() {
     );
   }
 
-  // ✅ "drafts" tab only visible on own profile
+  // "drafts" and "bookmark" tabs only visible on own profile
   const availableTabs = (
     isOwnProfile
       ? ["stories", "branched", "bookmark", "drafts"]
@@ -570,7 +566,7 @@ export default function ProfilePage() {
   return (
     <div style={{ background: "#0d0d12", minHeight: "100vh" }}>
       <div className="w-full flex flex-col items-center pt-[68px] gap-6 md:gap-10">
-        {/* ── Profile Header ──────────────────────────────────────────────────────── */}
+        {/* ── Profile Header ─────────────────────────────────────────────────── */}
         <section
           className="flex flex-col sm:flex-row gap-5 sm:gap-[39px] w-full max-w-[1200px] px-4 sm:px-8 md:px-[115px] py-6 sm:py-[55px] items-start"
           style={{
@@ -589,30 +585,35 @@ export default function ProfilePage() {
               <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-white leading-none">
                 {profile?.username}
               </h1>
-              <button
-                onClick={() => {
-                  localStorage.removeItem("token");
-                  window.location.href = "/auth/login";
-                }}
-                className="mt-1 flex items-center gap-1.5 text-[12px] font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-2 py-1 w-fit transition-colors duration-150"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="w-3.5 h-3.5"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
-                Logout
-              </button>
 
+              {/* ✅ Logout only shown on own profile */}
+              {isOwnProfile && (
+                <button
+                  onClick={() => {
+                    localStorage.removeItem("token");
+                    window.location.href = "/auth/login";
+                  }}
+                  className="mt-1 flex items-center gap-1.5 text-[12px] font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-md px-2 py-1 w-fit transition-colors duration-150"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-3.5 h-3.5"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Logout
+                </button>
+              )}
+
+              {/* ✅ Follow button only shown on other profiles */}
               {!isOwnProfile && (
                 <div className="mt-1">
                   <button
@@ -695,7 +696,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* ── Stats Bar ───────────────────────────────────────────────────────────── */}
+        {/* ── Stats Bar ──────────────────────────────────────────────────────── */}
         <section className="w-full max-w-[1200px] px-4 sm:px-6">
           <div
             className="flex flex-row flex-wrap items-center justify-around gap-4 sm:gap-6 rounded-md w-full min-h-[100px] sm:h-[127px] px-4 sm:px-[102px] py-4 sm:py-0 border border-white/10"
@@ -779,7 +780,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* ── Tabs + Content ───────────────────────────────────────────────────────── */}
+        {/* ── Tabs + Content ──────────────────────────────────────────────────── */}
         <section className="flex flex-col lg:flex-row w-full max-w-[1200px] px-4 sm:px-6 justify-between gap-6 pb-10">
           <div className="flex flex-col gap-5 flex-1 min-w-0">
             {/* Tab Bar */}
@@ -1019,7 +1020,7 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {/* ── Drafts Tab ✅ NEW ────────────────────────────────────────────────── */}
+            {/* Drafts Tab */}
             {activeTab === "drafts" && isOwnProfile && (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
                 {myDrafts.length === 0 ? (
@@ -1086,7 +1087,6 @@ export default function ProfilePage() {
                             style={{ background: "#1a1a26" }}
                             onClick={(e) => e.stopPropagation()}
                           >
-                            {/* Edit */}
                             <button
                               onClick={() => {
                                 handleEditDraft(draft);
@@ -1109,7 +1109,6 @@ export default function ProfilePage() {
                               </svg>
                               Edit
                             </button>
-                            {/* Publish */}
                             <button
                               onClick={() => handlePublishDraft(draft._id)}
                               disabled={publishingDraftId === draft._id}
@@ -1157,7 +1156,7 @@ export default function ProfilePage() {
                         )}
                       </div>
 
-                      {/* Cover image from parent story */}
+                      {/* Cover image */}
                       <div className="w-full aspect-[4/3] overflow-hidden">
                         <img
                           src={
@@ -1409,7 +1408,7 @@ export default function ProfilePage() {
           </div>
         </section>
 
-        {/* ── Edit Profile Modal ───────────────────────────────────────────────────── */}
+        {/* ── Edit Profile Modal ──────────────────────────────────────────────── */}
         {isEditOpen && isOwnProfile && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
             <div
@@ -1510,7 +1509,7 @@ export default function ProfilePage() {
           </div>
         )}
 
-        {/* ── Followers / Following Modal ──────────────────────────────────────────── */}
+        {/* ── Followers / Following Modal ─────────────────────────────────────── */}
         {userListModal.open && (
           <UserListModal
             title={
