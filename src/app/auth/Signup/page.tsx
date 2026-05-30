@@ -63,7 +63,9 @@ export default function Signup() {
     try {
       // Call your resend API here, e.g.:
       // await resendVerificationApi({ email: registeredEmail });
-      toast.success("Verification email resent!", { id: toastId });
+      toast.success("Verification email sent! Check your inbox.", {
+        id: toastId,
+      });
       startResendCooldown();
     } catch {
       toast.error("Failed to resend. Please try again.", { id: toastId });

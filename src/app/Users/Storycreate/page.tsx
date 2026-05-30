@@ -41,6 +41,32 @@ export default function CreateStoryPage() {
   const [myDrafts, setMyDrafts] = useState<Draft[]>([]);
   const [showDrafts, setShowDrafts] = useState(false);
   const [draftsLoading, setDraftsLoading] = useState(false);
+  const [parentChapterTitle, setParentChapterTitle] = useState<string | null>(
+    null,
+  );
+
+  // Fetch parent chapter title
+  useEffect(() => {
+    if (!parentChapterId) return;
+
+    async function fetchParentChapter() {
+      try {
+        const token =
+          localStorage.getItem("token") ?? sessionStorage.getItem("token");
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASEURL}/api/chapters/${parentChapterId}`,
+          { headers: token ? { Authorization: `Bearer ${token}` } : {} },
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setParentChapterTitle(data.title);
+      } catch {
+        // silent
+      }
+    }
+
+    fetchParentChapter();
+  }, [parentChapterId]);
 
   // Load draft content if draftId is in the URL
   useEffect(() => {
@@ -56,7 +82,7 @@ export default function CreateStoryPage() {
           setActiveDraftId(draft._id);
         }
       } catch {
-        // silent — draft may have been deleted
+        // silent
       }
     }
     loadDraft();
@@ -114,7 +140,6 @@ export default function CreateStoryPage() {
     setDraftsLoading(true);
     try {
       const drafts: Draft[] = await GetMyDrafts();
-      // Show only drafts for this story
       setMyDrafts(
         drafts.filter((d: Draft) => {
           if (!storyId) return true;
@@ -138,14 +163,12 @@ export default function CreateStoryPage() {
       setLoading(true);
 
       if (activeDraftId) {
-        // Update existing draft
         await UpdateChapter(activeDraftId, {
           title,
           content,
           branchTitle: parentChapterId ? branchTitle : undefined,
         });
       } else {
-        // Create new draft
         const res = await WriteStory({
           storyId: storyId!,
           title,
@@ -173,10 +196,8 @@ export default function CreateStoryPage() {
       setLoading(true);
 
       if (activeDraftId) {
-        // Publishing a draft that was already saved
         await PublishDraft(activeDraftId);
       } else {
-        // Direct publish (no draft save first)
         await WriteStory({
           storyId: storyId!,
           title,
@@ -529,7 +550,7 @@ export default function CreateStoryPage() {
                 className="text-sm font-medium"
                 style={{ color: "rgba(255,255,255,0.55)" }}
               >
-                {loading ? "Saving…" : ""}
+                Saving…
               </p>
             </div>
           </div>
@@ -685,27 +706,62 @@ export default function CreateStoryPage() {
                 border: "0.5px solid rgba(255,255,255,0.08)",
               }}
             >
-              {/* Branch title */}
+              {/* Branch section */}
               {parentChapterId && (
-                <div className="flex flex-col gap-2">
-                  <label
-                    className="text-xs font-medium tracking-wide uppercase"
-                    style={{ color: "rgba(255,255,255,0.35)" }}
-                  >
-                    Branch Name
-                  </label>
-                  <input
-                    type="text"
-                    value={branchTitle}
-                    onChange={(e) => setBranchTitle(e.target.value)}
-                    placeholder="Give your branch a name..."
-                    className="branch-input w-full h-11 rounded-xl px-4 text-sm text-white outline-none transition-all"
-                    style={{
-                      background: "rgba(255,255,255,0.05)",
-                      border: "0.5px solid rgba(255,255,255,0.1)",
-                      fontFamily: "'DM Sans', sans-serif",
-                    }}
-                  />
+                <div className="flex flex-col gap-3">
+                  {/* Parent chapter info bar */}
+                  {parentChapterTitle && (
+                    <div
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm"
+                      style={{
+                        background: "rgba(21,176,183,0.08)",
+                        border: "0.5px solid rgba(21,176,183,0.2)",
+                      }}
+                    >
+                      <svg
+                        width="14"
+                        height="14"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="#15b0b7"
+                        strokeWidth="2"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      >
+                        <path d="M12 2L4 7l8 5 8-5-8-5z" />
+                        <path d="M4 12l8 5 8-5" />
+                        <path d="M4 17l8 5 8-5" />
+                      </svg>
+                      <span style={{ color: "rgba(255,255,255,0.4)" }}>
+                        Branching from:
+                      </span>
+                      <span className="font-medium text-white truncate">
+                        {parentChapterTitle}
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Branch name input */}
+                  <div className="flex flex-col gap-2">
+                    <label
+                      className="text-xs font-medium tracking-wide uppercase"
+                      style={{ color: "rgba(255,255,255,0.35)" }}
+                    >
+                      Branch Name
+                    </label>
+                    <input
+                      type="text"
+                      value={branchTitle}
+                      onChange={(e) => setBranchTitle(e.target.value)}
+                      placeholder="Give your branch a name..."
+                      className="branch-input w-full h-11 rounded-xl px-4 text-sm text-white outline-none transition-all"
+                      style={{
+                        background: "rgba(255,255,255,0.05)",
+                        border: "0.5px solid rgba(255,255,255,0.1)",
+                        fontFamily: "'DM Sans', sans-serif",
+                      }}
+                    />
+                  </div>
                 </div>
               )}
 
