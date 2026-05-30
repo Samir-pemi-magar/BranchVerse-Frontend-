@@ -1,6 +1,6 @@
 "use client";
 import { GetAllStories, GetTrendingStories } from "@/src/Services/storyApi";
-import router from "next/router";
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useState,
@@ -35,6 +35,7 @@ const formatToKPlus = (num: number) => {
 };
 
 export default function Dashboard() {
+  const router = useRouter();
   const [stories, setStories] = useState<Story[]>([]);
   const [trending, setTrending] = useState<Story[]>([]);
   const [discoverStories, setDiscoverStories] = useState<Story[]>([]);
