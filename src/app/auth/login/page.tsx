@@ -10,6 +10,7 @@ import Link from "next/link";
 type LoginFormInputs = {
   email: string;
   password: string;
+  rememberMe: boolean;
 };
 
 export default function Login() {
@@ -28,8 +29,16 @@ export default function Login() {
         password: data.password,
       });
 
-      localStorage.setItem("token", res.token);
-      localStorage.setItem("userId", res.user._id);
+      if (data.rememberMe) {
+        localStorage.setItem("token", res.token);
+        localStorage.setItem("userId", res.user._id);
+      } else {
+        sessionStorage.setItem("token", res.token);
+        sessionStorage.setItem("userId", res.user._id);
+        // Clear any previous localStorage session
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+      }
 
       toast.success(res.msg || "Login successful!", { id: toastId });
 
@@ -407,6 +416,7 @@ export default function Login() {
                   <label className="flex items-center gap-2 cursor-pointer select-none">
                     <input
                       type="checkbox"
+                      {...register("rememberMe")}
                       className="w-4 h-4 cursor-pointer accent-[#6c4ef2]"
                     />
                     <span
